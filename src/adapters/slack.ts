@@ -6,7 +6,19 @@ const { App } = bolt;
 export interface SlackAdapterOptions {
   botToken: string;
   appToken: string;
+  /** 回答の先頭に「@発言者 > 元の発言」を付けて、どの発言への返信か分かるようにする（既定 true） */
+  quoteOriginal?: boolean;
+  /** スレッド返信をチャンネルにも表示する（Slack の「チャンネルにも送信」。既定 false） */
+  broadcastToChannel?: boolean;
   logger?: Pick<Console, "info" | "warn" | "error">;
+}
+
+const QUOTE_MAX = 80;
+
+/** 元の発言を 1 行の引用にまとめる。 */
+export function formatQuote(text: string): string {
+  const oneLine = text.replace(/\s+/g, " ").trim();
+  return oneLine.length > QUOTE_MAX ? `${oneLine.slice(0, QUOTE_MAX)}…` : oneLine;
 }
 
 /**
@@ -20,9 +32,13 @@ export class SlackAdapter implements ChatAdapter {
   private readonly app: InstanceType<typeof App>;
   private botUserId: string | undefined;
   private readonly log: Pick<Console, "info" | "warn" | "error">;
+  private readonly quoteOriginal: boolean;
+  private readonly broadcast: boolean;
 
   constructor(opts: SlackAdapterOptions) {
     this.log = opts.logger ?? console;
+    this.quoteOriginal = opts.quoteOriginal ?? true;
+    this.broadcast = opts.broadcastToChannel ?? false;
     this.app = new App({ token: opts.botToken, appToken: opts.appToken, socketMode: true });
   }
 
@@ -79,10 +95,15 @@ export class SlackAdapter implements ChatAdapter {
   }
 
   async send(msg: OutboundMessage): Promise<{ messageId: string }> {
+    let text = msg.text;
+    if (this.quoteOriginal && msg.inReplyTo) {
+      text = `<@${msg.inReplyTo.userId}> > ${formatQuote(msg.inReplyTo.text)}\n\n${msg.text}`;
+    }
     const res = await this.app.client.chat.postMessage({
       channel: msg.channelId,
       thread_ts: msg.threadId,
-      text: msg.text,
+      text,
+      reply_broadcast: this.broadcast,
     });
     return { messageId: (res.ts as string | undefined) ?? "" };
   }

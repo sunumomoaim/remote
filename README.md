@@ -38,6 +38,8 @@ AI の回答をチャットのスレッドに投稿し、**その回答にユー
 - **@メンション / DM** → 新しい会話を開始し、その発言を根本とするスレッドに回答を投稿
 - **既知のスレッドへの返信（メンション不要）** → 履歴を引き継いで AI を再駆動し、同じスレッドに回答
 - **知らないスレッドの返信** → 無視（他人の雑談に割り込まない）
+- 回答の先頭に「@発言者 > 元の発言（先頭 80 文字）」を付け、どの発言への返信かを明示（`SLACK_QUOTE_ORIGINAL=false` で無効）
+- `SLACK_REPLY_BROADCAST=true` でスレッド返信をチャンネルにも表示
 - `!reset` / `/reset` / `リセット` と返信 → そのスレッドの履歴を消去
 - 同じスレッドの返信は直列処理。別スレッドは並行処理
 - 同じメッセージの重複配送は 1 回だけ処理
@@ -126,6 +128,8 @@ npm run typecheck
 | `CLAUDE_EFFORT` | `medium` | api 方式の思考の深さ `low`〜`max` |
 | `SYSTEM_PROMPT` | 内蔵のチャット向けプロンプト | システムプロンプトの差し替え |
 | `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` | – | Slack 用 |
+| `SLACK_QUOTE_ORIGINAL` | `true` | 回答の先頭に発言者メンションと元の発言の引用を付ける |
+| `SLACK_REPLY_BROADCAST` | `false` | スレッド返信をチャンネルにも表示する |
 | `ADAPTERS` | Slack トークンがあれば `slack`、なければ `http` | `slack,http` で併用可 |
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | HTTP アダプタ |
 | `OUTBOUND_WEBHOOK` | – | AI の返信を転送する URL |

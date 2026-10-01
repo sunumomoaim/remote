@@ -52,7 +52,12 @@ test("addressed message starts a conversation and posts the answer to the thread
   const { adapter, driver } = setup(runner);
   await driver.handle(msg({ addressed: true, text: "最初の質問" }));
   assert.equal(adapter.sent.length, 1);
-  assert.deepEqual(adapter.sent[0], { channelId: "C1", threadId: "T1", text: "reply#1" });
+  assert.deepEqual(adapter.sent[0], {
+    channelId: "C1",
+    threadId: "T1",
+    text: "reply#1",
+    inReplyTo: { userId: "U1", messageId: adapter.sent[0].inReplyTo?.messageId, text: "最初の質問" },
+  });
   assert.equal(runner.calls[0].length, 1);
 });
 

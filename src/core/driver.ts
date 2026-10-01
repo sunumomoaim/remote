@@ -75,11 +75,18 @@ export class Driver {
     if (!text) return;
 
     let conv = await this.store.get(key);
+    const reply = (body: string) =>
+      adapter.send({
+        channelId: msg.channelId,
+        threadId: msg.threadId,
+        text: body,
+        inReplyTo: { userId: msg.userId, messageId: msg.messageId, text },
+      });
 
     if (RESET_COMMANDS.has(text)) {
       if (conv) {
         await this.store.delete(key);
-        await adapter.send({ channelId: msg.channelId, threadId: msg.threadId, text: "会話履歴をリセットしました。" });
+        await reply("会話履歴をリセットしました。");
       }
       return;
     }
@@ -102,11 +109,7 @@ export class Driver {
       conv.history.pop(); // 失敗した発言は履歴に残さない（再送で再試行できる）
       await this.store.save(conv);
       this.log.error(`[driver] runner failed for ${key}: ${String(err)}`);
-      await adapter.send({
-        channelId: msg.channelId,
-        threadId: msg.threadId,
-        text: "⚠️ 回答の生成に失敗しました。もう一度このスレッドに返信してください。",
-      });
+      await reply("⚠️ 回答の生成に失敗しました。もう一度このスレッドに返信してください。");
       return;
     }
 
@@ -114,7 +117,7 @@ export class Driver {
     conv.updatedAt = new Date().toISOString();
     await this.store.save(conv);
 
-    await adapter.send({ channelId: msg.channelId, threadId: msg.threadId, text: result.text });
+    await reply(result.text);
   }
 
   private newConversation(msg: InboundMessage, key: string): Conversation {

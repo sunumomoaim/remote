@@ -42,7 +42,14 @@ function buildAdapters(): ChatAdapter[] {
       if (!env.SLACK_BOT_TOKEN || !env.SLACK_APP_TOKEN) {
         throw new Error("SLACK_BOT_TOKEN と SLACK_APP_TOKEN が必要です");
       }
-      list.push(new SlackAdapter({ botToken: env.SLACK_BOT_TOKEN, appToken: env.SLACK_APP_TOKEN }));
+      list.push(
+        new SlackAdapter({
+          botToken: env.SLACK_BOT_TOKEN,
+          appToken: env.SLACK_APP_TOKEN,
+          quoteOriginal: env.SLACK_QUOTE_ORIGINAL !== "false",
+          broadcastToChannel: env.SLACK_REPLY_BROADCAST === "true",
+        }),
+      );
     } else if (name === "http") {
       list.push(
         new HttpAdapter({

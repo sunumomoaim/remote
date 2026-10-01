@@ -27,6 +27,12 @@ export interface OutboundMessage {
   channelId: string;
   threadId: string;
   text: string;
+  /** どの発言への返信かを示す情報。アダプタが引用やメンションに使う。 */
+  inReplyTo?: {
+    userId: string;
+    messageId: string;
+    text: string;
+  };
 }
 
 export type InboundHandler = (msg: InboundMessage) => Promise<void>;
