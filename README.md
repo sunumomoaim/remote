@@ -143,7 +143,53 @@ curl -s localhost:3000/messages -H 'content-type: application/json' \
 `OUTBOUND_WEBHOOK` を設定すると、AI の返信を外部 URL へ POST で転送します。
 Slack 以外のチャットは「受信 Webhook → `/messages` へ POST」「`OUTBOUND_WEBHOOK` → そのチャットへ投稿」の 2 本で接続できます。
 
-## 本番向け
+## 家の PC で常時動かして、外からスマホの Slack で指示する
+
+家の PC でボットを常駐させておけば、外出先の Slack から PC 上のプロジェクトに指示が出せます。
+
+### 1. 初回セットアップ（PC で 1 回だけ）
+
+```bash
+git clone https://github.com/sunumomoaim/remote.git
+cd remote
+npm install
+cp .env.example .env        # SLACK_BOT_TOKEN / SLACK_APP_TOKEN と、必要なら PROJECT_ALLOWED_TOOLS を書く
+claude                      # Claude Code にログイン済みか確認（対話できれば OK。/exit で抜ける）
+```
+
+### 2. 常駐させる（pm2）
+
+```bash
+set -a; source .env; set +a
+npm run daemon              # ビルドして常駐開始。落ちても自動で再起動する
+npm run daemon:status       # 状態
+npm run daemon:logs         # ログ
+npm run daemon:restart      # コードを更新したとき（git pull のあと）
+npm run daemon:stop         # 止める
+```
+
+### 3. PC を再起動しても自動で立ち上がるようにする
+
+```bash
+npx pm2 startup             # 表示されたコマンドをそのままコピーして実行する（macOS / Linux）
+npx pm2 save
+```
+
+Windows は `npm i -g pm2-windows-startup && pm2-startup install` のあと `npx pm2 save` です。
+
+### 4. PC がスリープしないようにする
+
+- macOS: システム設定 → ディスプレイ → 詳細設定 → 「電源アダプタ接続時はディスプレイがオフのときに自動でスリープさせない」をオン。ノート PC はふたを閉じると止まるので、電源につないで開いたままにするか `caffeinate -s` を使う
+- Windows: 設定 → システム → 電源 → 「スリープ」を「なし」
+
+### 5. 使い方
+
+1. Slack でプロジェクトごとにチャンネルを作り `/invite @reply_driver`
+2. そのチャンネルで `!project ~/dev/そのプロジェクト`
+3. `!sessions` → `!resume <ID>` で PC で進めていた作業の続きから、または `!new` で新規
+4. あとは普通に「テストを通して」「〇〇を直して」と書くだけ。進捗がリアルタイムで流れます
+
+### pm2 を使わない場合
 
 ```bash
 npm run build
