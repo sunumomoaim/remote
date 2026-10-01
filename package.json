@@ -1,0 +1,33 @@
+{
+  "name": "chat-reply-driver",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AIの回答をチャットに投稿し、そのスレッドへの返信でAIを再駆動する仕組み",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "daemon": "npm run build && pm2 start ecosystem.config.cjs --update-env && pm2 save",
+    "daemon:stop": "pm2 stop reply-driver",
+    "daemon:restart": "npm run build && pm2 restart reply-driver --update-env",
+    "daemon:logs": "pm2 logs reply-driver --lines 100",
+    "daemon:status": "pm2 status reply-driver"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@slack/bolt": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "pm2": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
