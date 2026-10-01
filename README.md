@@ -24,6 +24,8 @@ AI の回答をチャットのスレッドに投稿し、**その回答にユー
 |---|---|
 | `src/core/driver.ts` | 中核。スレッドを鍵に会話を引き、返信で AI を再駆動し、回答を同じスレッドへ投稿する |
 | `src/core/store.ts` | 会話履歴の保存。`FileStore`（JSON ファイル、再起動後も継続）と `MemoryStore` |
+| `src/core/projects.ts` | チャンネルとプロジェクトフォルダの紐づけ（`data/projects.json`） |
+| `src/core/sessions.ts` | PC 上の Claude Code セッション一覧の読み取り（`~/.claude/projects`） |
 | `src/runners/claude-code.ts` | **既定。** ローカルの Claude Code（`claude -p`）で回答を生成する Runner。Pro / Max の契約枠で動き、従量課金なし |
 | `src/runners/claude.ts` | Claude Messages API（API キー・従量課金）で回答を生成する Runner |
 | `src/runners/echo.ts` | API を呼ばない動作確認用 Runner |
@@ -33,11 +35,49 @@ AI の回答をチャットのスレッドに投稿し、**その回答にユー
 
 `Runner` と `ChatAdapter` はインターフェースなので、Discord / LINE / Teams 用のアダプタや別の AI バックエンドを足せます。
 
+## プロジェクトモード（チャンネル = PC 上のフォルダ）
+
+チャンネルを PC 上のプロジェクトフォルダに紐づけると、**メンションなしで書いた発言がそのまま Claude Code への指示**になり、
+そのフォルダで実行されます。Claude と直接話しているように、進捗がリアルタイムで流れます。
+
+```
+#lunchscope チャンネルで:
+  !project ~/dev/lunchscope      ← 紐づけ（1 回だけ）
+  テストを全部通して               ← 以後はこれだけで Claude Code が動く
+```
+
+回答メッセージは実行中に数秒ごとに書き換わり、使っているツール（🔧 Bash、📝 Edit、📖 Read …）と途中の文章が見えます。
+終わると最終回答と作業ログに置き換わります。
+
+| コマンド | 動き |
+|---|---|
+| `!project /path/to/dir` | このチャンネルをそのフォルダに紐づける（`~` 可） |
+| `!project` / `!unproject` | 紐づけの表示 / 解除 |
+| `!sessions` | そのフォルダにある PC 上の Claude Code セッション一覧（新しい順、▶ が現在） |
+| `!resume <セッションID>` | そのセッションの続きから話す（ターミナルで進めていた作業を Slack から引き継げる） |
+| `!new` | 新しいセッションで始める |
+| `!stop` | 実行中の処理を中断 |
+| `!help` | 使い方 |
+
+プロジェクトモードは `claude-code` 方式のときだけ有効です。ツールの権限は環境変数で決めます。
+
+| 変数 | 既定 | 説明 |
+|---|---|---|
+| `PROJECT_PERMISSION_MODE` | `acceptEdits` | ファイル編集は自動許可。`bypassPermissions` にすると全操作を自動許可（信頼できるフォルダだけで） |
+| `PROJECT_ALLOWED_TOOLS` | – | 自動許可するツール。例 `Bash(npm *) Bash(git *)` |
+| `PROJECT_TOOLS` | `default` | 使えるツール。`""` でチャットのみ |
+| `PROJECT_SYSTEM_PROMPT` | 内蔵 | プロジェクト用システムプロンプト |
+| `PROJECTS_FILE` | `data/projects.json` | 紐づけの保存先 |
+| `STREAM_UPDATE_MS` | `1500` | リアルタイム表示の更新間隔 |
+
+許可されていない操作（例: 許可リストにない Bash コマンド）は自動的にスキップされ、作業ログに「⛔」と出ます。
+
 ## 駆動ルール
 
 - **@メンション / DM** → 新しい会話を開始し、その発言を根本とするスレッドに回答を投稿
 - **既知のスレッドへの返信（メンション不要）** → 履歴を引き継いで AI を再駆動し、同じスレッドに回答
 - **知らないスレッドの返信** → 無視（他人の雑談に割り込まない）
+- 回答は「⏳ 考え中…」を先に投稿し、途中経過で書き換え、最後に回答に置き換える（Slack）
 - 回答の先頭に「@発言者 > 元の発言（先頭 80 文字）」を付け、どの発言への返信かを明示（`SLACK_QUOTE_ORIGINAL=false` で無効）
 - `SLACK_REPLY_BROADCAST=true` でスレッド返信をチャンネルにも表示
 - `!reset` / `/reset` / `リセット` と返信 → そのスレッドの履歴を消去

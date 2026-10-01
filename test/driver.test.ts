@@ -43,6 +43,7 @@ function msg(over: Partial<InboundMessage>): InboundMessage {
     userId: "U1",
     text: "hello",
     addressed: false,
+    inThread: false,
     ...over,
   };
 }

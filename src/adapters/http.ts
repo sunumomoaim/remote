@@ -46,9 +46,10 @@ export class HttpAdapter implements ChatAdapter {
 
   async send(msg: OutboundMessage): Promise<{ messageId: string }> {
     const id = randomUUID();
-    const waiter = this.waiters.get(msg.threadId);
+    const waiterKey = msg.threadId ?? msg.channelId;
+    const waiter = this.waiters.get(waiterKey);
     if (waiter) {
-      this.waiters.delete(msg.threadId);
+      this.waiters.delete(waiterKey);
       waiter(msg.text);
     }
     if (this.webhook) {
@@ -85,7 +86,10 @@ export class HttpAdapter implements ChatAdapter {
 
     const threadId = body.threadId ?? randomUUID();
     const channelId = body.channelId ?? "default";
-    const replyPromise = new Promise<string>((resolve) => this.waiters.set(threadId, resolve));
+    const replyPromise = new Promise<string>((resolve) => {
+      this.waiters.set(threadId, resolve);
+      this.waiters.set(channelId, resolve); // プロジェクトチャンネルはチャンネル直下に返る
+    });
 
     await handler({
       platform: this.name,
@@ -95,6 +99,7 @@ export class HttpAdapter implements ChatAdapter {
       userId: body.userId ?? "anonymous",
       text: body.text,
       addressed: !body.threadId, // threadId 無し = 新規開始、あり = 返信
+      inThread: !!body.threadId,
     });
 
     // Driver が send() を呼ばなかった（無視された）場合に備えて短い猶予後に解決
@@ -103,6 +108,7 @@ export class HttpAdapter implements ChatAdapter {
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 50)),
     ]);
     this.waiters.delete(threadId);
+    this.waiters.delete(channelId);
     if (reply === null) return json(res, 202, { threadId, reply: null, note: "ignored or not addressed" });
     return json(res, 200, { threadId, reply });
   }

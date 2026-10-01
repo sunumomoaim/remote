@@ -21,18 +21,23 @@ export interface InboundMessage {
    * true なら新しい会話を開始できる。false でも既知のスレッドへの返信なら会話を継続する。
    */
   addressed: boolean;
+  /** スレッドの中の発言か（false ならチャンネル直下の発言） */
+  inThread: boolean;
+}
+
+export interface ReplyTarget {
+  userId: string;
+  messageId: string;
+  text: string;
 }
 
 export interface OutboundMessage {
   channelId: string;
-  threadId: string;
+  /** 省略するとスレッドではなくチャンネル直下に投稿する */
+  threadId?: string;
   text: string;
   /** どの発言への返信かを示す情報。アダプタが引用やメンションに使う。 */
-  inReplyTo?: {
-    userId: string;
-    messageId: string;
-    text: string;
-  };
+  inReplyTo?: ReplyTarget;
 }
 
 export type InboundHandler = (msg: InboundMessage) => Promise<void>;
@@ -42,6 +47,8 @@ export interface ChatAdapter {
   readonly name: string;
   start(handler: InboundHandler): Promise<void>;
   send(msg: OutboundMessage): Promise<{ messageId: string }>;
+  /** 投稿済みメッセージを書き換える（リアルタイム表示用。未対応なら省略可） */
+  update?(channelId: string, messageId: string, text: string, inReplyTo?: ReplyTarget): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -60,16 +67,28 @@ export interface Conversation {
   state: Record<string, string>;
 }
 
-export interface RunContext {
-  conversationKey: string;
-  /** 会話ごとの可変状態。Runner が書き換えると Driver が永続化する。 */
-  state: Record<string, string>;
-}
-
 export interface ConversationStore {
   get(key: string): Promise<Conversation | undefined>;
   save(conv: Conversation): Promise<void>;
   delete(key: string): Promise<void>;
+}
+
+/** 回答生成の途中経過。 */
+export interface Progress {
+  /** ここまでに生成された本文 */
+  text: string;
+  /** ツール実行などの作業ログ（1 行ずつ） */
+  activity: string[];
+}
+
+export interface RunContext {
+  conversationKey: string;
+  /** 会話ごとの可変状態。Runner が書き換えると Driver が永続化する。 */
+  state: Record<string, string>;
+  /** 途中経過を受け取るコールバック（指定するとストリーミングで実行される） */
+  onProgress?: (progress: Progress) => void;
+  /** 中断用 */
+  signal?: AbortSignal;
 }
 
 export interface RunResult {
@@ -77,6 +96,8 @@ export interface RunResult {
   text: string;
   /** 履歴に積む assistant の content（thinking block などを含めてそのまま） */
   assistantContent: Anthropic.Beta.BetaContentBlockParam[];
+  /** 作業ログ（あれば） */
+  activity?: string[];
 }
 
 /** 履歴を受け取り AI の返答を生成する。差し替え可能。 */

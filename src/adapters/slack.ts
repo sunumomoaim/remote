@@ -1,5 +1,5 @@
 import bolt from "@slack/bolt";
-import type { ChatAdapter, InboundHandler, InboundMessage, OutboundMessage } from "../core/types.js";
+import type { ChatAdapter, InboundHandler, InboundMessage, OutboundMessage, ReplyTarget } from "../core/types.js";
 
 const { App } = bolt;
 
@@ -14,6 +14,7 @@ export interface SlackAdapterOptions {
 }
 
 const QUOTE_MAX = 80;
+const SLACK_MAX = 39000;
 
 /** 元の発言を 1 行の引用にまとめる。 */
 export function formatQuote(text: string): string {
@@ -25,7 +26,7 @@ export function formatQuote(text: string): string {
  * Slack 用アダプタ（Socket Mode なので公開 URL 不要）。
  *
  * - @bot メンション / DM        → addressed=true  （新規会話を開始できる）
- * - 既存スレッドへの通常の返信  → addressed=false （Driver が既知スレッドなら会話を継続）
+ * - それ以外の人間の発言        → addressed=false （Driver が既知スレッドの返信やプロジェクトチャンネルなら処理し、他は無視）
  */
 export class SlackAdapter implements ChatAdapter {
   readonly name = "slack";
@@ -76,8 +77,6 @@ export class SlackAdapter implements ChatAdapter {
       const isDm = e.channel_type === "im";
       const mentionsBot = !!this.botUserId && (e.text ?? "").includes(`<@${this.botUserId}>`);
       if (mentionsBot) return; // app_mention 側で処理する（二重処理の回避）
-      const isThreadReply = !!e.thread_ts && e.thread_ts !== e.ts;
-      if (!isDm && !isThreadReply) return; // チャンネルの雑談は拾わない
       await handler(
         this.toInbound({
           channel: e.channel,
@@ -95,17 +94,22 @@ export class SlackAdapter implements ChatAdapter {
   }
 
   async send(msg: OutboundMessage): Promise<{ messageId: string }> {
-    let text = msg.text;
-    if (this.quoteOriginal && msg.inReplyTo) {
-      text = `<@${msg.inReplyTo.userId}> > ${formatQuote(msg.inReplyTo.text)}\n\n${msg.text}`;
-    }
-    const res = await this.app.client.chat.postMessage({
-      channel: msg.channelId,
-      thread_ts: msg.threadId,
-      text,
-      reply_broadcast: this.broadcast,
-    });
+    const text = this.decorate(msg.text, msg.inReplyTo);
+    const res = msg.threadId
+      ? await this.app.client.chat.postMessage({ channel: msg.channelId, thread_ts: msg.threadId, text, reply_broadcast: this.broadcast })
+      : await this.app.client.chat.postMessage({ channel: msg.channelId, text });
     return { messageId: (res.ts as string | undefined) ?? "" };
+  }
+
+  async update(channelId: string, messageId: string, text: string, inReplyTo?: ReplyTarget): Promise<void> {
+    await this.app.client.chat.update({ channel: channelId, ts: messageId, text: this.decorate(text, inReplyTo) });
+  }
+
+  /** 「@発言者 > 元の発言」を先頭に付け、Slack の上限に収める。 */
+  private decorate(text: string, inReplyTo?: ReplyTarget): string {
+    let out = text;
+    if (this.quoteOriginal && inReplyTo) out = `<@${inReplyTo.userId}> > ${formatQuote(inReplyTo.text)}\n\n${text}`;
+    return out.length > SLACK_MAX ? `${out.slice(0, SLACK_MAX - 20)}\n…（長いので省略）` : out;
   }
 
   async stop(): Promise<void> {
@@ -129,6 +133,7 @@ export class SlackAdapter implements ChatAdapter {
       userId: e.user ?? "unknown",
       text,
       addressed: e.addressed,
+      inThread: !!e.thread_ts && e.thread_ts !== e.ts,
     };
   }
 }
