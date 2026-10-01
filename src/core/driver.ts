@@ -89,6 +89,7 @@ export class Driver {
       conv = this.newConversation(msg, key);
       this.log.info(`[driver] new conversation ${key}`);
     } else {
+      conv.state ??= {}; // 旧形式の保存データとの互換
       this.log.info(`[driver] reply drives ${key} (turns=${conv.history.length})`);
     }
 
@@ -96,7 +97,7 @@ export class Driver {
 
     let result;
     try {
-      result = await this.runner.run(conv.history, { conversationKey: key });
+      result = await this.runner.run(conv.history, { conversationKey: key, state: conv.state });
     } catch (err) {
       conv.history.pop(); // 失敗した発言は履歴に残さない（再送で再試行できる）
       await this.store.save(conv);
@@ -126,6 +127,7 @@ export class Driver {
       createdAt: now,
       updatedAt: now,
       history: [],
+      state: {},
     };
   }
 

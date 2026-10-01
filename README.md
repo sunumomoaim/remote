@@ -24,7 +24,8 @@ AI の回答をチャットのスレッドに投稿し、**その回答にユー
 |---|---|
 | `src/core/driver.ts` | 中核。スレッドを鍵に会話を引き、返信で AI を再駆動し、回答を同じスレッドへ投稿する |
 | `src/core/store.ts` | 会話履歴の保存。`FileStore`（JSON ファイル、再起動後も継続）と `MemoryStore` |
-| `src/runners/claude.ts` | Claude Messages API で回答を生成する Runner |
+| `src/runners/claude-code.ts` | **既定。** ローカルの Claude Code（`claude -p`）で回答を生成する Runner。Pro / Max の契約枠で動き、従量課金なし |
+| `src/runners/claude.ts` | Claude Messages API（API キー・従量課金）で回答を生成する Runner |
 | `src/runners/echo.ts` | API を呼ばない動作確認用 Runner |
 | `src/adapters/slack.ts` | Slack アダプタ（Socket Mode、公開 URL 不要） |
 | `src/adapters/http.ts` | 汎用 HTTP アダプタ。curl や他チャットからの橋渡し用 |
@@ -42,12 +43,29 @@ AI の回答をチャットのスレッドに投稿し、**その回答にユー
 - 同じメッセージの重複配送は 1 回だけ処理
 - 回答生成に失敗したらスレッドにその旨を投稿し、失敗した発言は履歴に残さない（再送で再試行できる）
 
+## 回答エンジンの選び方（料金）
+
+| RUNNER | 何で動くか | 料金 | 必要なもの |
+|---|---|---|---|
+| `claude-code`（既定） | PC にインストールした Claude Code の `claude` コマンド | **追加料金なし**（Claude Pro / Max の利用上限内） | Claude Code をインストールしてログイン済みであること |
+| `api` | Anthropic API | 従量課金 | `ANTHROPIC_API_KEY` |
+| `echo` | 何も呼ばない | 無料 | なし（配線の確認用） |
+
+`ANTHROPIC_API_KEY` が設定されていなければ自動的に `claude-code` が選ばれます。
+`claude-code` はスレッドごとに Claude Code のセッションを 1 つ持ち、返信のたびに `--resume` で続きを話します。
+
 ## セットアップ
 
 ```bash
 npm install
 cp .env.example .env   # 値を埋める
 ```
+
+### 無料で動かす（claude-code 方式）
+
+1. ボットを動かす PC に Claude Code を入れてログインしておく（`claude` と打って対話できれば OK）
+2. `.env` に Slack の 2 つのトークンだけを書く（`ANTHROPIC_API_KEY` は不要）
+3. `npm run dev`
 
 ### Slack
 
@@ -101,11 +119,12 @@ npm run typecheck
 
 | 変数 | 既定 | 説明 |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | – | Claude API キー |
-| `CLAUDE_MODEL` | `claude-opus-5-5` | 使用モデル |
-| `CLAUDE_EFFORT` | `medium` | 思考の深さ `low`〜`max` |
+| `RUNNER` | API キーがあれば `api`、なければ `claude-code` | `claude-code` / `api` / `echo` |
+| `CLAUDE_COMMAND` | `claude` | claude-code 方式で使うコマンドのパス |
+| `ANTHROPIC_API_KEY` | – | api 方式のときだけ必要 |
+| `CLAUDE_MODEL` | claude-code: Claude Code の既定 / api: `claude-opus-5-5` | 使用モデル |
+| `CLAUDE_EFFORT` | `medium` | api 方式の思考の深さ `low`〜`max` |
 | `SYSTEM_PROMPT` | 内蔵のチャット向けプロンプト | システムプロンプトの差し替え |
-| `RUNNER` | `claude` | `echo` にすると API を呼ばない |
 | `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` | – | Slack 用 |
 | `ADAPTERS` | Slack トークンがあれば `slack`、なければ `http` | `slack,http` で併用可 |
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | HTTP アダプタ |

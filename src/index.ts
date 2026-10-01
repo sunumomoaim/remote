@@ -4,16 +4,28 @@ import type { ChatAdapter, Runner } from "./core/types.js";
 import { HttpAdapter } from "./adapters/http.js";
 import { SlackAdapter } from "./adapters/slack.js";
 import { ClaudeRunner } from "./runners/claude.js";
+import { ClaudeCodeRunner } from "./runners/claude-code.js";
 import { EchoRunner } from "./runners/echo.js";
 
 const env = process.env;
 
 function buildRunner(): Runner {
-  if (env.RUNNER === "echo") {
+  // 既定: API キーがあれば API、なければ Claude Code CLI（契約の利用枠で動き、従量課金なし）
+  const runner = env.RUNNER ?? (env.ANTHROPIC_API_KEY ? "api" : "claude-code");
+  if (runner === "echo") {
     console.info("[boot] runner=echo (API を呼ばないダミー)");
     return new EchoRunner();
   }
-  console.info(`[boot] runner=claude model=${env.CLAUDE_MODEL ?? "claude-opus-5-5"}`);
+  if (runner === "claude-code") {
+    console.info(`[boot] runner=claude-code (ローカルの claude コマンド${env.CLAUDE_MODEL ? ` model=${env.CLAUDE_MODEL}` : ""})`);
+    return new ClaudeCodeRunner({
+      command: env.CLAUDE_COMMAND,
+      model: env.CLAUDE_MODEL,
+      systemPrompt: env.SYSTEM_PROMPT,
+    });
+  }
+  if (runner !== "api") throw new Error(`unknown RUNNER: ${runner}`);
+  console.info(`[boot] runner=api model=${env.CLAUDE_MODEL ?? "claude-opus-5-5"}`);
   return new ClaudeRunner({
     model: env.CLAUDE_MODEL,
     effort: env.CLAUDE_EFFORT as "low" | "medium" | "high" | "xhigh" | "max" | undefined,

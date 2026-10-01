@@ -50,6 +50,14 @@ export interface Conversation {
   updatedAt: string;
   /** そのまま Messages API に渡せる履歴（assistant 側は content block をそのまま保持する） */
   history: HistoryMessage[];
+  /** Runner が会話ごとに保持したい小さな状態（例: Claude Code のセッション ID） */
+  state: Record<string, string>;
+}
+
+export interface RunContext {
+  conversationKey: string;
+  /** 会話ごとの可変状態。Runner が書き換えると Driver が永続化する。 */
+  state: Record<string, string>;
 }
 
 export interface ConversationStore {
@@ -67,5 +75,5 @@ export interface RunResult {
 
 /** 履歴を受け取り AI の返答を生成する。差し替え可能。 */
 export interface Runner {
-  run(history: HistoryMessage[], ctx: { conversationKey: string }): Promise<RunResult>;
+  run(history: HistoryMessage[], ctx: RunContext): Promise<RunResult>;
 }
