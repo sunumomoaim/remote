@@ -220,3 +220,9 @@ npm run typecheck
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | HTTP アダプタ |
 | `OUTBOUND_WEBHOOK` | – | AI の返信を転送する URL |
 | `DATA_DIR` | `data/conversations` | 会話履歴の保存先 |
+
+## 同居プロジェクト
+
+| パス | 内容 |
+|---|---|
+| `junk-risk-checker/` | ヤフオクの中古カメラ「ジャンク出品」を出品者の行動から危険度判定する Web アプリ。独立した package.json を持つ。詳細は [junk-risk-checker/README.md](junk-risk-checker/README.md) |
