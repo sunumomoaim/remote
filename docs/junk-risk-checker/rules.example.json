@@ -1,0 +1,60 @@
+{
+  "$comment": "危険度ルールの初期値。condition は出品者指標・商品情報に対する条件、score は危険度への加算、reason は画面に出す理由文。",
+  "ranks": { "low": [0, 30], "mid": [31, 60], "high": [61, 100] },
+  "rules": [
+    {
+      "id": "same_model_working_exists",
+      "condition": { "metric": "same_model_working_count", "op": ">=", "value": 1 },
+      "score": 40,
+      "reason": "同型番の完動品を出品・販売した履歴があります"
+    },
+    {
+      "id": "camera_specialist",
+      "condition": { "metric": "camera_ratio", "op": ">=", "value": 0.7 },
+      "score": 20,
+      "reason": "カメラ専門の出品者です"
+    },
+    {
+      "id": "repair_knowledge",
+      "condition": { "metric": "repair_vocab_ratio", "op": ">=", "value": 0.1 },
+      "score": 15,
+      "reason": "修理知識を示す語彙（モルト交換・シャッター幕・OH など）が多く見られます"
+    },
+    {
+      "id": "claims_not_expert",
+      "condition": { "description_includes_any": ["詳しくない", "素人", "わかりません", "分かりません"] },
+      "score": 10,
+      "reason": "説明文に「詳しくない」等の記載があります"
+    },
+    {
+      "id": "partial_check",
+      "condition": { "description_includes_any": ["シャッター切れ", "露出計動", "ファインダー綺麗", "ファインダークリア", "通電確認"] },
+      "score": 15,
+      "reason": "部分的な動作確認が書かれています（最低限の検品済みの可能性）"
+    },
+    {
+      "id": "all_junk_seller",
+      "condition": { "metric": "junk_ratio", "op": ">=", "value": 0.9 },
+      "score": -30,
+      "reason": "出品のほぼ全てがジャンク・現状品です（未確認で出している可能性）"
+    },
+    {
+      "id": "estate_clearance",
+      "condition": { "description_includes_any": ["遺品", "実家", "倉庫整理", "まとめて", "まとめ売り"] },
+      "score": -15,
+      "reason": "遺品・整理品系の出品です"
+    },
+    {
+      "id": "price_very_low",
+      "condition": { "metric": "price_ratio", "op": "<", "value": 0.15 },
+      "score": -20,
+      "reason": "同型番の完動品相場に対して非常に安い価格です"
+    },
+    {
+      "id": "price_high_for_junk",
+      "condition": { "metric": "price_ratio", "op": ">=", "value": 0.4 },
+      "score": 15,
+      "reason": "ジャンクとしては相場に対して高めの価格です"
+    }
+  ]
+}
