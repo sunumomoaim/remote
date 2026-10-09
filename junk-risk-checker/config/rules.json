@@ -1,0 +1,92 @@
+{
+  "$comment": "危険度ルール。base から始めて、当たったルールの score を足し、0〜100 に収める。when の書き方は src/rules.ts を参照。",
+  "base": 30,
+  "ranks": { "low": [0, 30], "mid": [31, 60], "high": [61, 100] },
+  "rules": [
+    {
+      "id": "same_model_working_exists",
+      "when": { "metric": "same_model_working_count", "op": ">=", "value": 1 },
+      "score": 40,
+      "reason": "同型番の完動品を {same_model_working_count} 件出品・販売した履歴があります（欠陥を把握して選別している可能性）"
+    },
+    {
+      "id": "camera_specialist",
+      "when": { "all": [ { "metric": "camera_ratio", "op": ">=", "value": 0.7 }, { "metric": "total", "op": ">=", "value": 10 } ] },
+      "score": 20,
+      "reason": "カメラ専門の出品者です（カメラ関連率 {camera_ratio_pct}%）"
+    },
+    {
+      "id": "repair_knowledge_seller",
+      "when": { "metric": "repair_vocab_ratio", "op": ">=", "value": 0.1 },
+      "score": 15,
+      "reason": "出品タイトルに修理知識を示す語彙（モルト交換・シャッター幕・OH など）が多く見られます"
+    },
+    {
+      "id": "repair_knowledge_description",
+      "when": { "text": "description", "includes_any": ["モルト", "シャッター幕", "幕速", "オーバーホール", "分解", "注油", "張り替え", "張替"] },
+      "score": 10,
+      "reason": "説明文に修理・整備の知識を示す語彙があります"
+    },
+    {
+      "id": "claims_not_expert",
+      "when": { "text": "description", "includes_any": ["詳しくない", "詳しくありません", "素人", "わかりません", "分かりません", "知識がありません", "知識がない", "知識がございません"] },
+      "score": 10,
+      "reason": "説明文に「詳しくない」「素人」等の記載があります"
+    },
+    {
+      "id": "not_expert_but_specialist",
+      "when": { "all": [
+        { "text": "description", "includes_any": ["詳しくない", "詳しくありません", "素人", "わかりません", "分かりません", "知識がありません", "知識がない", "知識がございません"] },
+        { "metric": "camera_ratio", "op": ">=", "value": 0.7 },
+        { "metric": "total", "op": ">=", "value": 10 }
+      ] },
+      "score": 15,
+      "reason": "「詳しくない」と書いていますが、出品の大半がカメラ関連です（記載と行動が矛盾）"
+    },
+    {
+      "id": "partial_check",
+      "when": { "text": "description", "includes_any": ["シャッター切れ", "シャッターは切れ", "シャッターきれ", "空シャッター", "露出計動", "露出計は動", "ファインダー綺麗", "ファインダークリア", "通電確認", "通電のみ", "通電は確認", "電源入り", "電源は入り", "電源が入る", "巻き上げ可能", "巻き上げでき"] },
+      "score": 15,
+      "reason": "部分的な動作確認が書かれています（最低限の検品はしている可能性）"
+    },
+    {
+      "id": "all_junk_seller",
+      "when": { "all": [ { "metric": "camera_junk_ratio", "op": ">=", "value": 0.9 }, { "metric": "camera_count", "op": ">=", "value": 5 } ] },
+      "score": -30,
+      "reason": "カメラ関連の出品のほぼ全てがジャンク・現状品です（カメラのジャンク率 {camera_junk_ratio_pct}%。未確認のまま出している可能性）"
+    },
+    {
+      "id": "mixed_seller",
+      "when": { "all": [ { "metric": "camera_working_ratio", "op": ">=", "value": 0.3 }, { "metric": "camera_junk_ratio", "op": ">=", "value": 0.2 }, { "metric": "camera_count", "op": ">=", "value": 10 } ] },
+      "score": 15,
+      "reason": "カメラを完動品とジャンクで使い分けて出品しています（カメラの完動品率 {camera_working_ratio_pct}% / ジャンク率 {camera_junk_ratio_pct}%）"
+    },
+    {
+      "id": "estate_clearance",
+      "when": { "any": [
+        { "text": "description", "includes_any": ["遺品", "実家", "倉庫整理", "蔵出し", "引き上げ品", "長期保管"] },
+        { "text": "title", "includes_any": ["遺品", "蔵出し", "まとめ売り", "まとめて"] }
+      ] },
+      "score": -15,
+      "reason": "遺品・整理品・まとめ売り系の出品です"
+    },
+    {
+      "id": "price_very_low",
+      "when": { "metric": "price_ratio", "op": "<", "value": 0.15 },
+      "score": -20,
+      "reason": "同型番の完動品価格に対して非常に安い価格です（価格比 {price_ratio_pct}%。欠陥を価格に織り込んでいる可能性）"
+    },
+    {
+      "id": "price_high_for_junk",
+      "when": { "metric": "price_ratio", "op": ">=", "value": 0.4 },
+      "score": 15,
+      "reason": "ジャンクとしては完動品価格に近い価格です（価格比 {price_ratio_pct}%）"
+    },
+    {
+      "id": "seller_unavailable",
+      "when": { "metric": "seller_available", "op": "==", "value": 0 },
+      "score": 0,
+      "reason": "出品者情報を取得できなかったため、商品説明だけで判定しています"
+    }
+  ]
+}

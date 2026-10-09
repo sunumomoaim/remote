@@ -1,0 +1,27 @@
+{
+  "name": "junk-risk-checker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ヤフオクの中古カメラ「ジャンク出品」を、出品者の行動から危険度判定する",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "cheerio": "^1.0.0",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}
