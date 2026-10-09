@@ -55,9 +55,14 @@ export interface Metrics {
   sold_count: number;
   junk_count: number;
   working_count: number;
+  /** 全出品に対する比率 */
   junk_ratio: number | null;
   working_ratio: number | null;
   camera_ratio: number | null;
+  /** カメラ関連の出品だけで見た件数と比率。バッグや服などの出品に薄められない */
+  camera_count: number;
+  camera_junk_ratio: number | null;
+  camera_working_ratio: number | null;
   repair_vocab_ratio: number | null;
   same_model_working_count: number;
   same_model_junk_count: number;

@@ -29,14 +29,43 @@ test("URL → 商品 → 出品者（出品一覧 + 評価）→ 判定。結果
   assert.equal(JSON.parse(row!.result_json).item.title, r.item.title);
 });
 
-test("評価が 25 件を超えるなら 2 ページ目まで取り、重複は除く。ページ上限を守る", async () => {
-  const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
+test("評価が 25 件を超えるなら 2 ページ目まで取る。ページ上限を守る", async () => {
+  const fetcher = fakeFetcher({
+    "/auction/": fixture("item_b1247390897.html"),
+    "/seller/": fixture("seller_1item.html"),
+    "apg=2": fixture("rating_seller_p2.html"),
+    "show/rating": fixture("rating_seller_p1.html"),
+  });
   const db = new Db(":memory:");
   const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2 });
   assert.equal(r.seller?.fetchedPages, 3);
   assert.equal(fetcher.calls.filter((u) => u.includes("show/rating")).length, 2);
-  assert.ok(fetcher.calls.some((u) => u.includes("apg=2")));
-  assert.equal(r.seller?.listings.length, 26, "同じページが返っても重複しない（出品中 1 + 落札 25）");
+  assert.ok(fetcher.calls.some((u) => u.includes("role=seller&apg=2")));
+  assert.equal(r.seller?.listings.length, 46, "出品中 1 + 落札 25 + 落札 20");
+});
+
+test("同じページが 2 回返っても重複して数えない", async () => {
+  const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
+  const db = new Db(":memory:");
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2 });
+  assert.equal(r.seller?.listings.length, 26);
+});
+
+test("バッグや服の落札品があっても、カメラ関連だけで見たジャンク率で「全品ジャンク系」と判定する", async () => {
+  const fetcher = fakeFetcher({
+    "/auction/": fixture("item_b1247390897.html"),
+    "/seller/": fixture("seller_1item.html"),
+    "apg=2": fixture("rating_seller_p2.html"),
+    "show/rating": fixture("rating_seller_p1.html"),
+  });
+  const db = new Db(":memory:");
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2 });
+  assert.ok(r.metrics.camera_count < r.metrics.total, "2 ページ目にはカメラ以外の落札品がある");
+  assert.ok(r.metrics.junk_ratio! < 0.9, "全体のジャンク率は薄まる");
+  assert.ok(r.metrics.camera_junk_ratio! >= 0.9, "カメラ関連だけなら全品ジャンク");
+  assert.equal(r.metrics.camera_working_ratio, 0);
+  assert.ok(r.verdict.hits.some((h) => h.id === "all_junk_seller"));
+  assert.ok(!r.verdict.hits.some((h) => h.id === "mixed_seller"));
 });
 
 test("出品一覧が 50 件を超えるなら b=51 で 2 ページ目を取る。上限で止まる", async () => {

@@ -51,15 +51,15 @@
     },
     {
       "id": "all_junk_seller",
-      "when": { "all": [ { "metric": "junk_ratio", "op": ">=", "value": 0.9 }, { "metric": "total", "op": ">=", "value": 5 } ] },
+      "when": { "all": [ { "metric": "camera_junk_ratio", "op": ">=", "value": 0.9 }, { "metric": "camera_count", "op": ">=", "value": 5 } ] },
       "score": -30,
-      "reason": "出品のほぼ全てがジャンク・現状品です（未確認のまま出している可能性）"
+      "reason": "カメラ関連の出品のほぼ全てがジャンク・現状品です（カメラのジャンク率 {camera_junk_ratio_pct}%。未確認のまま出している可能性）"
     },
     {
       "id": "mixed_seller",
-      "when": { "all": [ { "metric": "working_ratio", "op": ">=", "value": 0.3 }, { "metric": "junk_ratio", "op": ">=", "value": 0.2 }, { "metric": "total", "op": ">=", "value": 10 } ] },
+      "when": { "all": [ { "metric": "camera_working_ratio", "op": ">=", "value": 0.3 }, { "metric": "camera_junk_ratio", "op": ">=", "value": 0.2 }, { "metric": "camera_count", "op": ">=", "value": 10 } ] },
       "score": 15,
-      "reason": "完動品とジャンクを使い分けて出品しています（完動品率 {working_ratio_pct}% / ジャンク率 {junk_ratio_pct}%）"
+      "reason": "カメラを完動品とジャンクで使い分けて出品しています（カメラの完動品率 {camera_working_ratio_pct}% / ジャンク率 {camera_junk_ratio_pct}%）"
     },
     {
       "id": "estate_clearance",

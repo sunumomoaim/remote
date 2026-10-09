@@ -15,6 +15,9 @@ function metrics(over: Partial<Metrics> = {}): Metrics {
     junk_ratio: 0.25,
     working_ratio: 0.25,
     camera_ratio: 0.5,
+    camera_count: 20,
+    camera_junk_ratio: 0.5,
+    camera_working_ratio: 0.5,
     repair_vocab_ratio: 0,
     same_model_working_count: 0,
     same_model_junk_count: 0,
@@ -52,10 +55,16 @@ test("同型番の完動品があっても、価格が相場に対して非常�
   assert.ok(sameHigh.hits.some((h) => h.id === "price_high_for_junk"));
 });
 
-test("全品ジャンク系の出品者は危険度が下がる", () => {
-  const r = run({ junk_ratio: 0.96, working_ratio: 0, total: 50 });
+test("カメラ関連が全品ジャンク系の出品者は危険度が下がる。バッグや服の「良品」で薄まっても変わらない", () => {
+  const r = run({ camera_junk_ratio: 0.96, camera_working_ratio: 0, camera_count: 30, junk_ratio: 0.6, working_ratio: 0.3, total: 50 });
   assert.ok(r.hits.some((h) => h.id === "all_junk_seller"));
+  assert.ok(!r.hits.some((h) => h.id === "mixed_seller"));
   assert.ok(r.score < rules.base);
+});
+
+test("カメラを完動品とジャンクで使い分ける出品者は危険度が上がる", () => {
+  const r = run({ camera_junk_ratio: 0.4, camera_working_ratio: 0.5, camera_count: 30 });
+  assert.ok(r.hits.some((h) => h.id === "mixed_seller"));
 });
 
 test("「詳しくない」と書くカメラ専門出品者は、記載だけの場合より高くなる", () => {
@@ -66,7 +75,7 @@ test("「詳しくない」と書くカメラ専門出品者は、記載だけ�
 });
 
 test("出品者情報が取れないときは理由に明示され、指標ベースのルールは当たらない", () => {
-  const r = run({ seller_available: 0, total: 0, junk_ratio: null, working_ratio: null, camera_ratio: null, repair_vocab_ratio: null }, "詳しくないです");
+  const r = run({ seller_available: 0, total: 0, junk_ratio: null, working_ratio: null, camera_ratio: null, camera_count: 0, camera_junk_ratio: null, camera_working_ratio: null, repair_vocab_ratio: null }, "詳しくないです");
   assert.ok(r.hits.some((h) => h.id === "seller_unavailable"));
   assert.ok(r.hits.some((h) => h.id === "claims_not_expert"));
   assert.ok(!r.hits.some((h) => h.id === "camera_specialist"));

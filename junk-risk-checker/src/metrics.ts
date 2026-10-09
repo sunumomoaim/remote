@@ -28,6 +28,9 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
         junk_ratio: null,
         working_ratio: null,
         camera_ratio: null,
+        camera_count: 0,
+        camera_junk_ratio: null,
+        camera_working_ratio: null,
         repair_vocab_ratio: null,
         same_model_working_count: 0,
         same_model_junk_count: 0,
@@ -43,7 +46,10 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
   const total = classified.length;
   const junk = classified.filter((l) => l.kind === "junk").length;
   const working = classified.filter((l) => l.kind === "working").length;
-  const camera = classified.filter((l) => isCameraRelated(l.title, vocab)).length;
+  const cameraItems = classified.filter((l) => isCameraRelated(l.title, vocab));
+  const camera = cameraItems.length;
+  const cameraJunk = cameraItems.filter((l) => l.kind === "junk").length;
+  const cameraWorking = cameraItems.filter((l) => l.kind === "working").length;
   const repair = classified.filter((l) => hasRepairVocab(l.title, vocab)).length;
 
   const sameModel = itemModels.length === 0 ? [] : classified.filter((l) => shareModel(itemModels, extractModels(l.title, models)));
@@ -55,6 +61,7 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
   const priceRatio = medianPrice !== null && itemPrice !== null && medianPrice > 0 ? round(itemPrice / medianPrice, 3) : null;
 
   const ratio = (n: number) => (total > 0 ? round(n / total, 3) : null);
+  const cameraRatio = (n: number) => (camera > 0 ? round(n / camera, 3) : null);
   return {
     itemModels,
     sameModelListings: sameModel,
@@ -68,6 +75,9 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
       junk_ratio: ratio(junk),
       working_ratio: ratio(working),
       camera_ratio: ratio(camera),
+      camera_count: camera,
+      camera_junk_ratio: cameraRatio(cameraJunk),
+      camera_working_ratio: cameraRatio(cameraWorking),
       repair_vocab_ratio: ratio(repair),
       same_model_working_count: sameWorking.length,
       same_model_junk_count: sameJunk.length,

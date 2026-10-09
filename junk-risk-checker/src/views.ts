@@ -121,9 +121,10 @@ ${outcome}
 <div class="card">
 <table>
 <tr><th>見た件数</th><td>${m.total}（出品中 ${m.listing_count} / 落札済 ${m.sold_count}）${r.seller ? `<span class="muted"> 出品中計 ${r.seller.totalListings} ・ 出品者評価計 ${r.seller.totalRatings}</span>` : ""}</td></tr>
-<tr><th>ジャンク率</th><td>${pct(m.junk_ratio)}（${m.junk_count} 件）</td></tr>
-<tr><th>完動品率</th><td>${pct(m.working_ratio)}（${m.working_count} 件）</td></tr>
-<tr><th>カメラ関連率</th><td>${pct(m.camera_ratio)}</td></tr>
+<tr><th>カメラ関連率</th><td>${pct(m.camera_ratio)}（${m.camera_count} 件）</td></tr>
+<tr><th>カメラのジャンク率</th><td>${pct(m.camera_junk_ratio)}</td></tr>
+<tr><th>カメラの完動品率</th><td>${pct(m.camera_working_ratio)}</td></tr>
+<tr><th>全出品のジャンク率 / 完動品率</th><td>${pct(m.junk_ratio)}（${m.junk_count} 件） / ${pct(m.working_ratio)}（${m.working_count} 件）</td></tr>
 <tr><th>修理語彙率</th><td>${pct(m.repair_vocab_ratio)}</td></tr>
 <tr><th>同型番 完動 / ジャンク</th><td>${m.same_model_working_count} / ${m.same_model_junk_count}</td></tr>
 <tr><th>価格比（対 同型番完動品中央値）</th><td>${m.price_ratio === null ? "-（同型番の完動品価格なし）" : `${pct(m.price_ratio)}（中央値 ${m.same_model_working_median_price} 円）`}</td></tr>
