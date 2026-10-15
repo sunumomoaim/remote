@@ -9,7 +9,7 @@ const ITEM_URL = "https://page.auctions.yahoo.co.jp/jp/auction/b1247390897";
 function setup() {
   const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
   const db = new Db(":memory:");
-  return { app: createApp({ fetcher, db, config, maxRatingPages: 1 }), db, fetcher };
+  return { app: createApp({ fetcher, db, config, maxRatingPages: 1, skipMarket: true }), db, fetcher };
 }
 
 test("GET /check は判定して結果ページへリダイレクトし、結果ページに危険度と理由が出る", async () => {
@@ -28,6 +28,7 @@ test("GET /check?format=json&debug=1 は JSON と各ルールの判定を返す"
   const { app } = setup();
   const res = await app.request(`/check?url=${encodeURIComponent(ITEM_URL)}&format=json&debug=1`);
   assert.equal(res.status, 200);
+  assert.equal(res.headers.get("access-control-allow-origin"), "*", "Chrome 拡張から読めるよう CORS を許可");
   const body = (await res.json()) as any;
   assert.equal(body.item.auctionId, "b1247390897");
   assert.ok(Array.isArray(body.debug));
@@ -46,7 +47,7 @@ test("GET /share は共有テキストから URL を抜いて /check へ送る",
 test("不正な URL は 400、取得失敗は 502", async () => {
   const { app } = setup();
   assert.equal((await app.request(`/check?url=mercari&format=json`)).status, 400);
-  const broken = createApp({ fetcher: fakeFetcher({}), db: new Db(":memory:"), config });
+  const broken = createApp({ fetcher: fakeFetcher({}), db: new Db(":memory:"), config, skipMarket: true });
   assert.equal((await broken.request(`/check?url=${encodeURIComponent(ITEM_URL)}&format=json`)).status, 502);
 });
 

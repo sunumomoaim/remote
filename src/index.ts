@@ -8,6 +8,7 @@ import { SlackAdapter } from "./adapters/slack.js";
 import { ClaudeRunner } from "./runners/claude.js";
 import { ClaudeCodeRunner } from "./runners/claude-code.js";
 import { EchoRunner } from "./runners/echo.js";
+import { createJunkCheckInterceptor } from "./integrations/junk-check.js";
 
 const env = process.env;
 
@@ -103,7 +104,10 @@ async function main() {
           })
       : undefined,
     updateIntervalMs: env.STREAM_UPDATE_MS ? Number(env.STREAM_UPDATE_MS) : undefined,
+    // ヤフオク URL → ジャンク危険度（junk-risk-checker/ を起動して JUNK_CHECK_URL を設定したとき）
+    interceptors: env.JUNK_CHECK_URL ? [createJunkCheckInterceptor({ baseUrl: env.JUNK_CHECK_URL })] : [],
   });
+  if (env.JUNK_CHECK_URL) console.info(`[boot] junk-check=${env.JUNK_CHECK_URL}（ヤフオク URL を貼ると危険度を返す）`);
 
   for (const a of adapters) await a.start(driver.handle);
   console.info(`[boot] ready: adapters=${adapters.map((a) => a.name).join(",")}`);

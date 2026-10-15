@@ -22,6 +22,7 @@ const app = createApp({
   maxListingPages: Number(process.env.MAX_LISTING_PAGES ?? 2),
   maxRatingPages: Number(process.env.MAX_RATING_PAGES ?? 2),
   sellerCacheMs: Number(process.env.SELLER_CACHE_HOURS ?? 24) * 60 * 60 * 1000,
+  marketCacheMs: Number(process.env.MARKET_CACHE_DAYS ?? 7) * 24 * 60 * 60 * 1000,
 });
 app.use("/*", serveStatic({ root: path.relative(process.cwd(), path.join(root, "public")) || "public" }));
 

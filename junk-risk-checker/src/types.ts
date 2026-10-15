@@ -67,7 +67,30 @@ export interface Metrics {
   same_model_working_count: number;
   same_model_junk_count: number;
   same_model_working_median_price: number | null;
+  /** まとめ売り・複数台の出品なら 1。価格比較は 1 台の相場と合わないので価格ルールの対象外にする */
+  is_bundle: number;
+  /** 価格比。出品者の同型番完動品があればそれ、無ければ落札相場の完動品中央値に対する比 */
   price_ratio: number | null;
+  market_sample_size: number;
+  market_working_median_price: number | null;
+  market_junk_median_price: number | null;
+  /** 今回の価格 ÷ 落札相場のジャンク中央値 */
+  market_junk_price_ratio: number | null;
+}
+
+/** 同型番の落札相場（終了したオークションの検索結果から） */
+export interface MarketStats {
+  /** 検索に使った文字列 */
+  query: string;
+  fetchedAt: string;
+  /** 検索結果の総数 */
+  total: number;
+  /** 集計に使った件数（まとめ売り等を除いた後） */
+  sampleSize: number;
+  workingCount: number;
+  workingMedianPrice: number | null;
+  junkCount: number;
+  junkMedianPrice: number | null;
 }
 
 export interface RuleHit {
@@ -91,6 +114,10 @@ export interface CheckResult {
   itemModels: ModelRef[];
   seller: SellerProfile | null;
   sellerError: string | null;
+  market: MarketStats | null;
+  marketError: string | null;
+  /** price_ratio の出どころ */
+  priceRatioSource: "seller" | "market" | null;
   metrics: Metrics;
   verdict: Verdict;
   /** 同型番の出品（理由の裏付け表示用） */

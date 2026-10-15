@@ -72,15 +72,21 @@
     },
     {
       "id": "price_very_low",
-      "when": { "metric": "price_ratio", "op": "<", "value": 0.15 },
+      "when": { "all": [ { "metric": "is_bundle", "op": "==", "value": 0 }, { "metric": "price_ratio", "op": "<", "value": 0.15 } ] },
       "score": -20,
-      "reason": "同型番の完動品価格に対して非常に安い価格です（価格比 {price_ratio_pct}%。欠陥を価格に織り込んでいる可能性）"
+      "reason": "同型番の完動品価格（出品者の出品または落札相場）に対して非常に安い価格です（価格比 {price_ratio_pct}%。欠陥を価格に織り込んでいる可能性）"
     },
     {
       "id": "price_high_for_junk",
-      "when": { "metric": "price_ratio", "op": ">=", "value": 0.4 },
+      "when": { "all": [ { "metric": "is_bundle", "op": "==", "value": 0 }, { "metric": "price_ratio", "op": ">=", "value": 0.4 } ] },
       "score": 15,
       "reason": "ジャンクとしては完動品価格に近い価格です（価格比 {price_ratio_pct}%）"
+    },
+    {
+      "id": "price_above_junk_market",
+      "when": { "all": [ { "metric": "is_bundle", "op": "==", "value": 0 }, { "metric": "market_junk_price_ratio", "op": ">=", "value": 1.5 }, { "metric": "market_sample_size", "op": ">=", "value": 10 } ] },
+      "score": 10,
+      "reason": "同型番のジャンク落札相場の {market_junk_price_ratio} 倍の価格です（相場より高いジャンクは旨味が薄い）"
     },
     {
       "id": "seller_unavailable",

@@ -1,7 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import type { CheckResult, SellerProfile } from "./types.js";
+import type { CheckResult, MarketStats, SellerProfile } from "./types.js";
 
 export type Action = "bought" | "skipped";
 export type Outcome = "working" | "minor" | "major";
@@ -36,6 +36,11 @@ export class Db {
         fetched_at TEXT NOT NULL,
         profile_json TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS market_cache (
+        query TEXT PRIMARY KEY,
+        fetched_at TEXT NOT NULL,
+        stats_json TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS checks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         created_at TEXT NOT NULL,
@@ -68,6 +73,21 @@ export class Db {
     this.db
       .prepare("INSERT OR REPLACE INTO seller_cache (seller_id, fetched_at, profile_json) VALUES (?, ?, ?)")
       .run(profile.sellerId, profile.fetchedAt, JSON.stringify(profile));
+  }
+
+  getMarket(query: string, maxAgeMs: number, now = Date.now()): MarketStats | null {
+    const row = this.db.prepare("SELECT fetched_at, stats_json FROM market_cache WHERE query = ?").get(query) as
+      | { fetched_at: string; stats_json: string }
+      | undefined;
+    if (!row) return null;
+    if (now - Date.parse(row.fetched_at) > maxAgeMs) return null;
+    return JSON.parse(row.stats_json) as MarketStats;
+  }
+
+  putMarket(stats: MarketStats): void {
+    this.db
+      .prepare("INSERT OR REPLACE INTO market_cache (query, fetched_at, stats_json) VALUES (?, ?, ?)")
+      .run(stats.query, stats.fetchedAt, JSON.stringify(stats));
   }
 
   insertCheck(result: CheckResult): number {

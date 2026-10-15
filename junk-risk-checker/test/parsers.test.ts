@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseItemPage } from "../src/yahoo/item.js";
-import { parseSellerPage } from "../src/yahoo/seller.js";
+import { parseClosedSearchPage, parseSellerPage } from "../src/yahoo/seller.js";
 import { parseRatingPage } from "../src/yahoo/rating.js";
 import { fixture } from "./helpers.js";
 
@@ -68,4 +68,12 @@ test("評価ページ: 落札者としての評価は対象外", () => {
   assert.equal(page.entries, 2);
   assert.deepEqual(page.items.map((i) => i.auctionId), ["y222222222"]);
   assert.equal(page.total, 2);
+});
+
+test("落札相場ページ: 出品一覧と同じ JSON 構造。落札価格と総数が取れる", () => {
+  const page = parseClosedSearchPage(fixture("closed_canon_ae-1.html"));
+  assert.equal(page.total, 5762);
+  assert.equal(page.items.length, 50);
+  assert.ok(page.items.every((i) => i.source === "sold" && i.price !== null && i.price > 0 && i.title.length > 0));
+  assert.ok(page.items.some((i) => /完動/.test(i.title)) && page.items.some((i) => /ジャンク/.test(i.title)));
 });

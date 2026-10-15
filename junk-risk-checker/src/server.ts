@@ -23,6 +23,12 @@ export function createApp(deps: AnalyzeDeps): Hono {
     return c.redirect(`/check?url=${encodeURIComponent(url)}`);
   });
 
+  // Chrome 拡張（ヤフオクのページ上）から JSON を取れるようにする。判定結果は個人用で秘匿情報は無い
+  app.use("/check", async (c, next) => {
+    await next();
+    c.header("access-control-allow-origin", "*");
+  });
+
   app.get("/check", async (c) => {
     const input = c.req.query("url") ?? "";
     const wantJson = c.req.query("format") === "json" || (c.req.header("accept") ?? "").startsWith("application/json");

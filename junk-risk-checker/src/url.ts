@@ -19,6 +19,12 @@ export function sellerListUrl(sellerId: string, offset = 0, perPage = 50): strin
   return `https://auctions.yahoo.co.jp/seller/${encodeURIComponent(sellerId)}?b=${offset + 1}&n=${perPage}`;
 }
 
+/** 落札相場（終了したオークション）の検索。1 ページ 50 件。 */
+export function closedSearchUrl(query: string, perPage = 50): string {
+  const q = encodeURIComponent(query);
+  return `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${q}&va=${q}&n=${perPage}`;
+}
+
 export function sellerRatingUrl(sellerId: string, page = 1): string {
   const base = `https://auctions.yahoo.co.jp/jp/show/rating?auc_user_id=${encodeURIComponent(sellerId)}&role=seller`;
   return page > 1 ? `${base}&apg=${page}` : base;

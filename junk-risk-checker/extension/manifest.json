@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "ジャンク危険度チェッカー",
+  "version": "0.1.0",
+  "description": "ヤフオクの商品ページに、出品者の行動から見たジャンクの危険度を表示する（ローカルの junk-risk-checker に接続）",
+  "permissions": ["storage"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://auctions.yahoo.co.jp/jp/auction/*", "https://page.auctions.yahoo.co.jp/jp/auction/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": { "page": "options.html", "open_in_tab": false }
+}

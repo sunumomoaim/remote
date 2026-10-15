@@ -22,7 +22,12 @@ function metrics(over: Partial<Metrics> = {}): Metrics {
     same_model_working_count: 0,
     same_model_junk_count: 0,
     same_model_working_median_price: null,
+    is_bundle: 0,
     price_ratio: null,
+    market_sample_size: 0,
+    market_working_median_price: null,
+    market_junk_median_price: null,
+    market_junk_price_ratio: null,
     ...over,
   };
 }
@@ -89,4 +94,18 @@ test("危険度は 0〜100 に収まり、ランクは閾値に従う", () => {
   assert.equal(rankOf(30, rules), "low");
   assert.equal(rankOf(31, rules), "mid");
   assert.equal(rankOf(61, rules), "high");
+});
+
+test("まとめ売りの出品には価格ルールを適用しない", () => {
+  const single = run({ price_ratio: 0.5, market_junk_price_ratio: 2, market_sample_size: 30 });
+  const bundle = run({ is_bundle: 1, price_ratio: 0.5, market_junk_price_ratio: 2, market_sample_size: 30 });
+  assert.ok(single.hits.some((h) => h.id === "price_high_for_junk"));
+  assert.ok(!bundle.hits.some((h) => h.id === "price_high_for_junk" || h.id === "price_above_junk_market" || h.id === "price_very_low"));
+});
+
+test("ジャンク落札相場の 1.5 倍以上の価格なら危険度が上がる（相場データが 10 件以上あるとき）", () => {
+  const r = run({ market_junk_price_ratio: 2, market_sample_size: 30 });
+  assert.ok(r.hits.some((h) => h.id === "price_above_junk_market"));
+  const few = run({ market_junk_price_ratio: 2, market_sample_size: 3 });
+  assert.ok(!few.hits.some((h) => h.id === "price_above_junk_market"));
 });

@@ -8,6 +8,7 @@ import type {
   ConversationStore,
   HistoryMessage,
   InboundMessage,
+  Interceptor,
   Progress,
   ReplyTarget,
   RunContext,
@@ -26,6 +27,8 @@ export interface DriverOptions {
   projectRunner?: (cwd: string) => Runner;
   /** リアルタイム表示の更新間隔（ms） */
   updateIntervalMs?: number;
+  /** AI に渡す前に発言を横取りする処理（URL の自動判定など）。メンションの有無に関係なく動く */
+  interceptors?: Interceptor[];
   /** 同じ messageId を二度処理しないための記憶数 */
   dedupeSize?: number;
   /** PC 上のセッション一覧を読む HOME（テスト用） */
@@ -71,6 +74,7 @@ export class Driver {
   private readonly projects: ProjectRegistry | undefined;
   private readonly projectRunner: ((cwd: string) => Runner) | undefined;
   private readonly projectRunners = new Map<string, Runner>();
+  private readonly interceptors: Interceptor[];
   private readonly updateIntervalMs: number;
   private readonly home: string | undefined;
   private readonly log: Pick<Console, "info" | "warn" | "error">;
@@ -88,6 +92,7 @@ export class Driver {
     this.adapters = opts.adapters;
     this.projects = opts.projects;
     this.projectRunner = opts.projectRunner;
+    this.interceptors = opts.interceptors ?? [];
     this.updateIntervalMs = opts.updateIntervalMs ?? 1500;
     this.dedupeSize = opts.dedupeSize ?? 2000;
     this.home = opts.home;
@@ -113,6 +118,21 @@ export class Driver {
 
     // コマンドは直列化の外で処理する（!stop が実行中の処理を止められるように）
     if (text.startsWith("!") && (await this.handleCommand(msg, text, adapter, binding))) return;
+
+    // 横取り処理（例: ヤフオク URL → ジャンク危険度）。該当すれば AI は呼ばない
+    for (const intercept of this.interceptors) {
+      let body: string | undefined;
+      try {
+        body = await intercept(msg, text);
+      } catch (err) {
+        this.log.warn(`[driver] interceptor failed: ${String(err)}`);
+        continue;
+      }
+      if (body !== undefined) {
+        await adapter.send({ ...this.targetOf(msg, text, !!binding), text: body });
+        return;
+      }
+    }
 
     const key = binding ? channelKey : conversationKey(msg);
     const prev = this.queues.get(key) ?? Promise.resolve();

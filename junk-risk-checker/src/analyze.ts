@@ -1,8 +1,10 @@
 import type { AppConfig } from "./config.js";
 import type { Db } from "./db.js";
-import type { CheckResult, Listing, SellerProfile } from "./types.js";
+import type { CheckResult, Listing, MarketStats, SellerProfile } from "./types.js";
+import { loadMarket } from "./market.js";
+import { extractModels } from "./model.js";
 import { auctionIdFromUrl, extractAuctionUrl, sellerListUrl, sellerRatingUrl } from "./url.js";
-import type { Fetcher } from "./yahoo/fetch.js";
+import { FetchError, type Fetcher } from "./yahoo/fetch.js";
 import { parseItemPage } from "./yahoo/item.js";
 import { parseRatingPage } from "./yahoo/rating.js";
 import { parseSellerPage } from "./yahoo/seller.js";
@@ -19,6 +21,10 @@ export interface AnalyzeDeps {
   maxRatingPages?: number;
   /** 出品者キャッシュの有効期間 */
   sellerCacheMs?: number;
+  /** 落札相場キャッシュの有効期間 */
+  marketCacheMs?: number;
+  /** 落札相場の取得を止める（テスト・節約用） */
+  skipMarket?: boolean;
   now?: () => Date;
 }
 
@@ -44,7 +50,19 @@ export async function analyze(input: string, deps: AnalyzeDeps): Promise<CheckRe
     sellerError = "出品者 ID を取得できませんでした";
   }
 
-  const { metrics, itemModels, sameModelListings } = computeMetrics(item, seller, deps.config);
+  // 落札相場: 型番が取れたときだけ 1 ページ（キャッシュ 7 日）
+  let market: MarketStats | null = null;
+  let marketError: string | null = null;
+  const models = extractModels(item.title, deps.config.models);
+  if (!deps.skipMarket && models.length > 0) {
+    try {
+      market = await loadMarket(models[0], { fetcher: deps.fetcher, db: deps.db, config: deps.config, marketCacheMs: deps.marketCacheMs, now });
+    } catch (e) {
+      marketError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  const { metrics, itemModels, sameModelListings, priceRatioSource } = computeMetrics(item, seller, deps.config, market);
   const verdict = evaluateRules(deps.config.rules, { metrics, description: item.description, title: item.title });
 
   const result: CheckResult = {
@@ -53,6 +71,9 @@ export async function analyze(input: string, deps: AnalyzeDeps): Promise<CheckRe
     itemModels,
     seller,
     sellerError,
+    market,
+    marketError,
+    priceRatioSource,
     metrics,
     verdict: { score: verdict.score, rank: verdict.rank, hits: verdict.hits },
     sameModelListings,
@@ -72,10 +93,19 @@ export async function loadSeller(sellerId: string, deps: AnalyzeDeps, now: () =>
   const listings: Listing[] = [];
   let fetchedPages = 0;
 
-  // 出品中
+  // 出品中（出品が 1 件も無い出品者は一覧ページが 404 になる → 0 件として評価ページへ進む）
   let totalListings = 0;
   for (let page = 0; page < maxListing; page++) {
-    const html = await deps.fetcher(sellerListUrl(sellerId, page * 50, 50));
+    let html: string;
+    try {
+      html = await deps.fetcher(sellerListUrl(sellerId, page * 50, 50));
+    } catch (e) {
+      if (e instanceof FetchError && e.status === 404) {
+        fetchedPages++;
+        break;
+      }
+      throw e;
+    }
     fetchedPages++;
     const parsed = parseSellerPage(html);
     totalListings = parsed.total;

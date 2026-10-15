@@ -1,5 +1,5 @@
 import type { AppConfig } from "./config.js";
-import type { Item, Kind, Listing, Metrics, ModelRef, SellerProfile } from "./types.js";
+import type { Item, Kind, Listing, MarketStats, Metrics, ModelRef, SellerProfile } from "./types.js";
 import { classifyTitle, hasRepairVocab, isCameraRelated } from "./classify.js";
 import { extractModels, shareModel } from "./model.js";
 
@@ -7,17 +7,34 @@ export interface MetricsResult {
   metrics: Metrics;
   itemModels: ModelRef[];
   sameModelListings: Array<Listing & { kind: Kind }>;
+  priceRatioSource: "seller" | "market" | null;
 }
 
-/** 出品者履歴と商品から、ルール判定に使う指標を計算する。 */
-export function computeMetrics(item: Item, seller: SellerProfile | null, config: AppConfig): MetricsResult {
+/** まとめ売り・複数台の出品。1 台の相場と比べても意味が無いので価格ルールから外す */
+export const BUNDLE_TITLE = /まとめ|セット|[2-9２-９]\s*台|\d+\s*本|大量/;
+
+/** 出品者履歴・落札相場・商品から、ルール判定に使う指標を計算する。 */
+export function computeMetrics(item: Item, seller: SellerProfile | null, config: AppConfig, market: MarketStats | null = null): MetricsResult {
   const { vocab, models } = config;
   const itemModels = extractModels(item.title, models);
+  const itemPrice = item.buyNowPrice ?? item.price;
+  const is_bundle = BUNDLE_TITLE.test(item.title) ? 1 : 0;
+  const marketWorking = market?.workingMedianPrice ?? null;
+  const marketJunk = market?.junkMedianPrice ?? null;
+  const marketRatio = (base: number | null) => (base !== null && base > 0 && itemPrice !== null ? round(itemPrice / base, 3) : null);
+  const marketMetrics = {
+    market_sample_size: market?.sampleSize ?? 0,
+    market_working_median_price: marketWorking,
+    market_junk_median_price: marketJunk,
+    market_junk_price_ratio: marketRatio(marketJunk),
+  };
 
   if (!seller) {
+    const price_ratio = marketRatio(marketWorking);
     return {
       itemModels,
       sameModelListings: [],
+      priceRatioSource: price_ratio === null ? null : "market",
       metrics: {
         seller_available: 0,
         total: 0,
@@ -35,7 +52,9 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
         same_model_working_count: 0,
         same_model_junk_count: 0,
         same_model_working_median_price: null,
-        price_ratio: null,
+        is_bundle,
+        price_ratio,
+        ...marketMetrics,
       },
     };
   }
@@ -57,14 +76,17 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
   const sameJunk = sameModel.filter((l) => l.kind === "junk");
   const prices = sameWorking.map((l) => l.buyNowPrice ?? l.price).filter((p): p is number => p !== null && p > 0);
   const medianPrice = median(prices);
-  const itemPrice = item.buyNowPrice ?? item.price;
-  const priceRatio = medianPrice !== null && itemPrice !== null && medianPrice > 0 ? round(itemPrice / medianPrice, 3) : null;
+  const sellerRatio = medianPrice !== null && itemPrice !== null && medianPrice > 0 ? round(itemPrice / medianPrice, 3) : null;
+  // 出品者自身に同型番の完動品があればそれが一番近い基準。無ければ落札相場で代用する
+  const priceRatio = sellerRatio ?? marketRatio(marketWorking);
+  const priceRatioSource: MetricsResult["priceRatioSource"] = sellerRatio !== null ? "seller" : priceRatio !== null ? "market" : null;
 
   const ratio = (n: number) => (total > 0 ? round(n / total, 3) : null);
   const cameraRatio = (n: number) => (camera > 0 ? round(n / camera, 3) : null);
   return {
     itemModels,
     sameModelListings: sameModel,
+    priceRatioSource,
     metrics: {
       seller_available: 1,
       total,
@@ -82,7 +104,9 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
       same_model_working_count: sameWorking.length,
       same_model_junk_count: sameJunk.length,
       same_model_working_median_price: medianPrice,
+      is_bundle,
       price_ratio: priceRatio,
+      ...marketMetrics,
     },
   };
 }

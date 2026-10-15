@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { analyze, AnalyzeError } from "../src/analyze.js";
 import { Db } from "../src/db.js";
+import { FetchError } from "../src/yahoo/fetch.js";
 import { computeMetrics } from "../src/metrics.js";
 import type { Item, SellerProfile } from "../src/types.js";
 import { config, fakeFetcher, fixture } from "./helpers.js";
@@ -11,7 +12,7 @@ const ITEM_URL = "https://page.auctions.yahoo.co.jp/jp/auction/b1247390897";
 test("URL → 商品 → 出品者（出品一覧 + 評価）→ 判定。結果は DB に保存される", async () => {
   const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
   const db = new Db(":memory:");
-  const r = await analyze(`共有: ${ITEM_URL}`, { fetcher, db, config, maxRatingPages: 1 });
+  const r = await analyze(`共有: ${ITEM_URL}`, { fetcher, db, config, maxRatingPages: 1, skipMarket: true });
   assert.equal(r.item.auctionId, "b1247390897");
   assert.equal(r.seller?.sellerId, "6rYAGL1xCjaUK7mBgfAoYr62xZRAK");
   assert.equal(r.seller?.totalRatings, 93);
@@ -37,7 +38,7 @@ test("評価が 25 件を超えるなら 2 ページ目まで取る。ページ�
     "show/rating": fixture("rating_seller_p1.html"),
   });
   const db = new Db(":memory:");
-  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2 });
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2, skipMarket: true });
   assert.equal(r.seller?.fetchedPages, 3);
   assert.equal(fetcher.calls.filter((u) => u.includes("show/rating")).length, 2);
   assert.ok(fetcher.calls.some((u) => u.includes("role=seller&apg=2")));
@@ -47,7 +48,7 @@ test("評価が 25 件を超えるなら 2 ページ目まで取る。ページ�
 test("同じページが 2 回返っても重複して数えない", async () => {
   const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
   const db = new Db(":memory:");
-  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2 });
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2, skipMarket: true });
   assert.equal(r.seller?.listings.length, 26);
 });
 
@@ -59,7 +60,7 @@ test("バッグや服の落札品があっても、カメラ関連だけで見�
     "show/rating": fixture("rating_seller_p1.html"),
   });
   const db = new Db(":memory:");
-  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2 });
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 2, skipMarket: true });
   assert.ok(r.metrics.camera_count < r.metrics.total, "2 ページ目にはカメラ以外の落札品がある");
   assert.ok(r.metrics.junk_ratio! < 0.9, "全体のジャンク率は薄まる");
   assert.ok(r.metrics.camera_junk_ratio! >= 0.9, "カメラ関連だけなら全品ジャンク");
@@ -76,7 +77,7 @@ test("出品一覧が 50 件を超えるなら b=51 で 2 ページ目を取る�
     "show/rating": fixture("rating_seller_p1.html"),
   });
   const db = new Db(":memory:");
-  const r = await analyze(ITEM_URL, { fetcher, db, config, maxListingPages: 2, maxRatingPages: 1 });
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxListingPages: 2, maxRatingPages: 1, skipMarket: true });
   assert.equal(r.seller?.totalListings, 316);
   assert.equal(r.seller?.listings.filter((l) => l.source === "listing").length, 100);
   assert.equal(fetcher.calls.filter((u) => u.includes("/seller/")).length, 2);
@@ -87,20 +88,20 @@ test("2 回目は出品者キャッシュを使い、ヤフオクへは商品ペ
   const db = new Db(":memory:");
   let t = Date.parse("2026-10-08T00:00:00Z");
   const now = () => new Date(t);
-  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, now });
+  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, now, skipMarket: true });
   const before = fetcher.calls.length;
   t += 60 * 60 * 1000;
-  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, now });
+  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, now, skipMarket: true });
   assert.equal(fetcher.calls.length - before, 1);
   t += 25 * 60 * 60 * 1000;
-  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, now });
+  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, now, skipMarket: true });
   assert.ok(fetcher.calls.length - before > 2, "24 時間を過ぎたら取り直す");
 });
 
 test("出品者ページが取れなくても、商品説明だけで判定して返す", async () => {
   const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html") });
   const db = new Db(":memory:");
-  const r = await analyze(ITEM_URL, { fetcher, db, config });
+  const r = await analyze(ITEM_URL, { fetcher, db, config, skipMarket: true });
   assert.equal(r.seller, null);
   assert.match(r.sellerError!, /unexpected fetch/);
   assert.equal(r.metrics.seller_available, 0);
@@ -127,11 +128,72 @@ test("指標: 同型番の完動品価格の中央値と価格比", () => {
       { auctionId: "a5", title: "Nikon F3 完動品", price: null, buyNowPrice: null, endTime: null, source: "sold" },
     ],
   };
-  const { metrics, sameModelListings } = computeMetrics(item, seller, config);
+  const { metrics, sameModelListings, priceRatioSource } = computeMetrics(item, seller, config);
+  assert.equal(priceRatioSource, "seller");
+  assert.equal(metrics.is_bundle, 0);
   assert.equal(metrics.total, 4);
   assert.equal(metrics.same_model_working_count, 3);
   assert.equal(metrics.same_model_working_median_price, 40000, "即決があれば即決を使う。落札済みは価格不明なので除く");
   assert.equal(metrics.price_ratio, 0.125);
   assert.equal(metrics.working_ratio, 1);
   assert.equal(sameModelListings.length, 3);
+});
+
+test("落札相場: 型番で 1 ページ検索し、まとめ売りを除いて完動品・ジャンクの中央値を出す。価格比は出品者に完動品が無ければ相場で代用", async () => {
+  const fetcher = fakeFetcher({
+    "/auction/": fixture("item_b1247390897.html"),
+    "/seller/": fixture("seller_1item.html"),
+    "show/rating": fixture("rating_seller_p1.html"),
+    "closedsearch": fixture("closed_canon_ae-1.html"),
+  });
+  const db = new Db(":memory:");
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1 });
+  const q = fetcher.calls.find((u) => u.includes("closedsearch"))!;
+  assert.match(q, /p=canon%20ae-1%20program/);
+  assert.equal(r.market?.query, "canon ae-1 program");
+  assert.equal(r.market?.total, 5762);
+  assert.ok(r.market!.sampleSize > 20 && r.market!.sampleSize <= 50);
+  assert.ok(r.market!.workingCount > 0 && r.market!.junkCount > 0);
+  assert.ok(r.market!.workingMedianPrice! > r.market!.junkMedianPrice!, "完動品の中央値はジャンクより高い");
+  assert.equal(r.priceRatioSource, "market");
+  assert.equal(r.metrics.is_bundle, 1, "この商品は 5 台まとめ売り");
+  assert.ok(!r.verdict.hits.some((h) => h.id.startsWith("price_")), "まとめ売りには価格ルールを当てない");
+  assert.equal(r.metrics.price_ratio, Math.round((14033 / r.market!.workingMedianPrice!) * 1000) / 1000);
+  assert.equal(r.metrics.market_junk_price_ratio, Math.round((14033 / r.market!.junkMedianPrice!) * 1000) / 1000);
+  assert.equal(r.marketError, null);
+});
+
+test("落札相場は 7 日キャッシュされ、取得に失敗しても判定は返る", async () => {
+  const fetcher = fakeFetcher({
+    "/auction/": fixture("item_b1247390897.html"),
+    "/seller/": fixture("seller_1item.html"),
+    "show/rating": fixture("rating_seller_p1.html"),
+    "closedsearch": fixture("closed_canon_ae-1.html"),
+  });
+  const db = new Db(":memory:");
+  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1 });
+  await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1 });
+  assert.equal(fetcher.calls.filter((u) => u.includes("closedsearch")).length, 1);
+
+  const broken = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
+  const r = await analyze(ITEM_URL, { fetcher: broken, db: new Db(":memory:"), config, maxRatingPages: 1 });
+  assert.equal(r.market, null);
+  assert.match(r.marketError!, /unexpected fetch/);
+  assert.equal(r.metrics.price_ratio, null);
+  assert.ok(r.verdict.score >= 0);
+});
+
+test("出品中が 0 件の出品者（一覧ページが 404）でも、評価ページから過去の落札品を取って判定する", async () => {
+  const fetcher = fakeFetcher({
+    "/auction/": fixture("item_b1247390897.html"),
+    "/seller/": () => { throw new FetchError("https://auctions.yahoo.co.jp/seller/x?b=1&n=50", 404, ""); },
+    "show/rating": fixture("rating_seller_p1.html"),
+  });
+  const db = new Db(":memory:");
+  const r = await analyze(ITEM_URL, { fetcher, db, config, maxRatingPages: 1, skipMarket: true });
+  assert.equal(r.sellerError, null);
+  assert.equal(r.seller?.totalListings, 0);
+  assert.equal(r.metrics.listing_count, 0);
+  assert.equal(r.metrics.sold_count, 25);
+  assert.ok(r.verdict.hits.some((h) => h.id === "all_junk_seller"));
 });

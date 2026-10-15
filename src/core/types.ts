@@ -42,6 +42,13 @@ export interface OutboundMessage {
 
 export type InboundHandler = (msg: InboundMessage) => Promise<void>;
 
+/**
+ * AI に渡す前に発言を横取りする処理。
+ * 文字列を返すとそれをそのまま返信し、AI は呼ばない。undefined なら次へ。
+ * 例: ヤフオクの URL が貼られたらジャンク危険度を返す。
+ */
+export type Interceptor = (msg: InboundMessage, text: string) => Promise<string | undefined>;
+
 /** チャットプラットフォームとの接続（受信と送信）を担う。 */
 export interface ChatAdapter {
   readonly name: string;

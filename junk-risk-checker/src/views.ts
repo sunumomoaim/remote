@@ -127,8 +127,25 @@ ${outcome}
 <tr><th>全出品のジャンク率 / 完動品率</th><td>${pct(m.junk_ratio)}（${m.junk_count} 件） / ${pct(m.working_ratio)}（${m.working_count} 件）</td></tr>
 <tr><th>修理語彙率</th><td>${pct(m.repair_vocab_ratio)}</td></tr>
 <tr><th>同型番 完動 / ジャンク</th><td>${m.same_model_working_count} / ${m.same_model_junk_count}</td></tr>
-<tr><th>価格比（対 同型番完動品中央値）</th><td>${m.price_ratio === null ? "-（同型番の完動品価格なし）" : `${pct(m.price_ratio)}（中央値 ${m.same_model_working_median_price} 円）`}</td></tr>
+${m.is_bundle ? `<tr><th>まとめ売り</th><td>複数台・セットの出品なので、1 台の価格比較（価格ルール）は適用していません</td></tr>` : ""}
+<tr><th>価格比（対 同型番完動品）</th><td>${
+    m.price_ratio === null
+      ? "-（同型番の完動品価格なし）"
+      : `${pct(m.price_ratio)}（${r.priceRatioSource === "seller" ? `この出品者の完動品中央値 ${m.same_model_working_median_price} 円` : `落札相場の完動品中央値 ${m.market_working_median_price} 円`}）`
+  }</td></tr>
 </table>
+</div>
+<h2>同型番の落札相場</h2>
+<div class="card">
+${
+  r.market
+    ? `<table>
+<tr><th>検索</th><td><a href="https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(r.market.query)}" target="_blank" rel="noopener">${esc(r.market.query)}</a>（${r.market.total} 件中 直近 ${r.market.sampleSize} 件を集計、まとめ売りは除外）</td></tr>
+<tr><th>完動品系の中央値</th><td>${r.market.workingMedianPrice ?? "-"} 円（${r.market.workingCount} 件）</td></tr>
+<tr><th>ジャンク系の中央値</th><td>${r.market.junkMedianPrice ?? "-"} 円（${r.market.junkCount} 件）${m.market_junk_price_ratio !== null ? ` ・ この商品は ${m.market_junk_price_ratio} 倍` : ""}</td></tr>
+</table>`
+    : `<span class="muted">${esc(r.marketError ?? "型番を特定できなかったため相場は見ていません")}</span>`
+}
 </div>
 ${same ? `<h2>同型番の出品</h2><div class="card"><table><tr><th>種別</th><th>タイトル</th><th>価格</th><th></th></tr>${same}</table></div>` : ""}
 <h2>商品説明</h2>
