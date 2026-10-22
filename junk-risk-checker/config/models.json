@@ -1,0 +1,43 @@
+{
+  "$comment": "メーカー別名と、メーカーごとの既知の型番。型番は長いものから順に照合する。辞書にない型番は正規表現で拾う。",
+  "makers": {
+    "canon": ["canon", "キヤノン", "キャノン", "canonet", "キャノネット"],
+    "nikon": ["nikon", "ニコン", "nikkor", "nikkormat", "ニコマート"],
+    "pentax": ["pentax", "ペンタックス", "asahi", "アサヒ", "takumar", "タクマー"],
+    "olympus": ["olympus", "オリンパス", "zuiko", "ズイコー"],
+    "minolta": ["minolta", "ミノルタ", "rokkor", "ロッコール"],
+    "leica": ["leica", "ライカ", "leitz", "ライツ", "summicron", "elmar", "summilux"],
+    "konica": ["konica", "コニカ", "hexanon"],
+    "mamiya": ["mamiya", "マミヤ"],
+    "fujifilm": ["fujifilm", "fuji", "fujica", "フジ", "富士"],
+    "contax": ["contax", "コンタックス", "yashica", "ヤシカ"],
+    "rollei": ["rollei", "ローライ"],
+    "hasselblad": ["hasselblad", "ハッセルブラッド", "ハッセル"],
+    "ricoh": ["ricoh", "リコー"],
+    "bronica": ["bronica", "ブロニカ", "zenza"],
+    "sony": ["sony", "ソニー"],
+    "panasonic": ["panasonic", "パナソニック", "lumix"],
+    "sigma": ["sigma", "シグマ"],
+    "tamron": ["tamron", "タムロン"]
+  },
+  "models": {
+    "canon": ["AE-1 Program", "AE-1P", "AE-1", "A-1", "AV-1", "AL-1", "AT-1", "T50", "T70", "T90", "F-1", "New F-1", "FTb", "FT", "FX", "FP", "EF", "EOS-1V", "EOS 1V", "EOS-1N", "EOS 1N", "EOS 1", "EOS 3", "EOS 5", "EOS 7", "EOS 55", "EOS Kiss", "EOS 5D Mark IV", "EOS 5D Mark III", "EOS 5D Mark II", "EOS 5D", "EOS 6D", "EOS 7D", "EOS R", "Canonet QL17", "QL17", "QL19", "Canonet", "Demi", "Dial 35", "Autoboy", "IVSb", "IV Sb", "L1", "P", "7", "VI L"],
+    "nikon": ["F6", "F5", "F4", "F3", "F2", "F", "FM3A", "FM2", "FM10", "FM", "FE2", "FE10", "FE", "FA", "FG-20", "FG", "EM", "F100", "F90", "F80", "F70", "F60", "F50", "F-801", "F-601", "F-501", "F-401", "F-301", "S3", "S2", "SP", "S", "Nikomat", "Nikkormat", "FT3", "FT2", "FTN", "EL", "D850", "D800", "D750", "D700", "D610", "D600", "D500", "D300", "D200", "D90", "D80", "D70", "D7500", "D7200", "D7100", "D7000", "D5600", "D5500", "D5300", "D3500", "D3400", "D3300", "Z6", "Z7", "Z5", "Z50", "28Ti", "35Ti", "L35AF"],
+    "pentax": ["LX", "MX", "ME Super", "ME-F", "ME", "MV1", "MV", "MG", "KX", "KM", "K2", "K1000", "SP F", "SPF", "SP II", "SPII", "SP", "SL", "SV", "S2", "S3", "ES II", "ESII", "ES", "67II", "67", "6x7", "645N", "645", "Super A", "Super Program", "Program A", "P30", "P50", "Z-1", "MZ-3", "MZ-5", "MZ-S", "K-1", "K-3", "K-5", "K-7", "K-30", "K-50", "K-70", "K10D", "K20D", "K100D", "K200D", "Espio", "PC35AF", "Auto 110"],
+    "olympus": ["OM-1N", "OM-1", "OM-2N", "OM-2SP", "OM-2", "OM-3Ti", "OM-3", "OM-4Ti", "OM-4", "OM-10", "OM-20", "OM-30", "OM-40", "OM-101", "OM1", "OM2", "OM10", "OM4", "XA2", "XA", "35SP", "35RC", "35DC", "35RD", "35 SP", "35 RC", "Pen FT", "Pen FV", "Pen F", "Pen EE-3", "Pen EE3", "Pen EE", "Pen EES", "Pen D", "Pen S", "Pen", "Trip 35", "Trip35", "mju II", "μ-II", "μ II", "mju", "μ", "E-M1", "E-M5", "E-M10", "E-P1", "E-P2", "E-P3", "E-PL"],
+    "minolta": ["X-700", "X-570", "X-500", "X-370", "X-300", "X-7", "XD", "XE", "XG-E", "XG-S", "XG", "SRT101", "SR-T101", "SRT 101", "SRT102", "SR-T102", "SRT Super", "SR-T Super", "SR-1", "SR-2", "SR-3", "SR-7", "α-7000", "α7000", "α-9000", "α-7", "α-9", "α-507si", "α-707si", "α-7xi", "α-Sweet", "Hi-Matic 7S", "Hi-Matic E", "Hi-Matic F", "Hi-Matic", "ハイマチック", "CLE", "CL", "Autocord", "TC-1", "AL", "V2"],
+    "leica": ["M3", "M2", "M4-P", "M4-2", "M4", "M5", "M6 TTL", "M6", "M7", "MP", "M8", "M9", "M10", "M240", "IIIf", "IIIg", "IIIc", "IIIa", "III", "IIf", "IIc", "II", "If", "Ic", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "CL", "Minilux", "Q2", "Q", "X1", "X2"],
+    "konica": ["FT-1", "FTA", "FS-1", "T3", "T4", "T", "C35 FD", "C35FD", "C35 EF", "C35", "Hexar RF", "Hexar", "Big Mini", "現場監督", "Auto S2", "Auto S3", "AutoS2"],
+    "mamiya": ["RB67", "RZ67", "M645", "645 Pro", "645 Super", "645", "C330", "C220", "C33", "C3", "7II", "7", "6", "ZE", "ZM", "NC1000", "Press", "Universal"],
+    "fujifilm": ["GW690", "GSW690", "GW680", "GS645", "GA645", "GF670", "G617", "GX617", "GX680", "ST801", "ST701", "ST605", "ST901", "AX-3", "AX-5", "AX-1", "Klasse", "Natura", "Tiara", "Cardia", "X100", "X-T1", "X-T2", "X-T3", "X-T4", "X-Pro1", "X-Pro2", "X-E1", "X-E2", "GFX"],
+    "contax": ["RTS III", "RTS II", "RTS", "139 Quartz", "139", "137 MD", "137 MA", "137", "159MM", "167MT", "RX", "ST", "S2", "Aria", "G1", "G2", "T2", "T3", "T", "TVS", "645", "AX", "N1", "FX-3 Super 2000", "FX-3", "FX-D", "FR", "Electro 35 GX", "Electro 35 GSN", "Electro 35 GT", "Electro 35", "エレクトロ35", "エレクトロ 35", "Mat-124G", "Mat 124G", "124G", "Mat"],
+    "rollei": ["35S", "35SE", "35T", "35TE", "35", "2.8F", "2.8E", "2.8C", "3.5F", "3.5E", "Rolleiflex", "Rolleicord", "SL66", "SL35"],
+    "hasselblad": ["500C/M", "500CM", "500C", "503CW", "503CX", "501CM", "501C", "500EL", "SWC", "903SWC", "2000FC", "XPan"],
+    "ricoh": ["GR1v", "GR1s", "GR1", "GR21", "GR", "XR-7", "XR-2", "XR500", "XR-500", "KR-5", "KR-10", "500G", "500GX", "Auto Half", "オートハーフ", "GXR", "R10"],
+    "bronica": ["S2", "S2A", "EC-TL", "EC", "ETRS", "ETRSi", "ETR", "SQ-A", "SQ-Ai", "SQ", "GS-1", "RF645"],
+    "sony": ["α7 III", "α7III", "α7 II", "α7II", "α7R", "α7S", "α7", "α9", "α6000", "α6300", "α6400", "α6500", "α6600", "α5100", "NEX-5", "NEX-6", "NEX-7", "NEX-3", "RX100", "RX1", "a7"],
+    "panasonic": ["GH5", "GH4", "GH3", "G9", "GX7", "GX8", "GF1", "GF2", "LX100", "LX3", "LX5", "S5", "S1"],
+    "sigma": ["DP1", "DP2", "DP3", "SD1", "SD14", "SD15", "fp"],
+    "tamron": []
+  }
+}

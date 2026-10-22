@@ -220,3 +220,18 @@ npm run typecheck
 | `PORT` / `HOST` | `3000` / `127.0.0.1` | HTTP アダプタ |
 | `OUTBOUND_WEBHOOK` | – | AI の返信を転送する URL |
 | `DATA_DIR` | `data/conversations` | 会話履歴の保存先 |
+
+## 同居プロジェクト
+
+| パス | 内容 |
+|---|---|
+| `junk-risk-checker/` | ヤフオクの中古カメラ「ジャンク出品」を出品者の行動から危険度判定する Web アプリ。独立した package.json を持つ。詳細は [junk-risk-checker/README.md](junk-risk-checker/README.md) |
+
+### チャットにヤフオク URL を貼ると危険度を返す
+
+`junk-risk-checker/` を起動し、`.env` に `JUNK_CHECK_URL=http://localhost:3100` を書くと、
+Slack（DM でもチャンネルでも、メンション不要）にヤフオクの商品 URL を貼るだけで、AI を呼ばずに危険度と理由を返します。
+スマホのヤフオクアプリから「共有 → Slack」で送れば、HTTPS の公開も PWA の設定も不要です。
+
+pm2 で両方を常駐させる場合は `ecosystem.config.cjs` に両アプリが入っているので、
+`cd junk-risk-checker && npm install && npm run build` のあと `npm run daemon` で一緒に起動します。
