@@ -7,7 +7,7 @@ import { config, fakeFetcher, fixture } from "./helpers.js";
 const ITEM_URL = "https://page.auctions.yahoo.co.jp/jp/auction/b1247390897";
 
 function setup() {
-  const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "show/rating": fixture("rating_seller_p1.html") });
+  const fetcher = fakeFetcher({ "/auction/": fixture("item_b1247390897.html"), "/seller/": fixture("seller_1item.html"), "role=buyer": fixture("rating_buyer_p1.html"), "show/rating": fixture("rating_seller_p1.html") });
   const db = new Db(":memory:");
   return { app: createApp({ fetcher, db, config, maxRatingPages: 1, skipMarket: true }), db, fetcher };
 }

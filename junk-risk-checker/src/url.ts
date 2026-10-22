@@ -25,7 +25,7 @@ export function closedSearchUrl(query: string, perPage = 50): string {
   return `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${q}&va=${q}&n=${perPage}`;
 }
 
-export function sellerRatingUrl(sellerId: string, page = 1): string {
-  const base = `https://auctions.yahoo.co.jp/jp/show/rating?auc_user_id=${encodeURIComponent(sellerId)}&role=seller`;
+export function sellerRatingUrl(sellerId: string, page = 1, role: "seller" | "buyer" = "seller"): string {
+  const base = `https://auctions.yahoo.co.jp/jp/show/rating?auc_user_id=${encodeURIComponent(sellerId)}&role=${role}`;
   return page > 1 ? `${base}&apg=${page}` : base;
 }

@@ -89,6 +89,18 @@
       "reason": "同型番のジャンク落札相場の {market_junk_price_ratio} 倍の価格です（相場より高いジャンクは旨味が薄い）"
     },
     {
+      "id": "heavy_buyer_reseller",
+      "when": { "all": [ { "metric": "bought_total", "op": ">=", "value": 100 }, { "metric": "buy_sell_ratio", "op": ">=", "value": 2 }, { "metric": "camera_ratio", "op": ">=", "value": 0.5 } ] },
+      "score": 10,
+      "reason": "大量に仕入れて売る業者です（落札 {bought_total} 件 / 販売 {sold_total} 件。買った中から選別して出している可能性）"
+    },
+    {
+      "id": "many_photos_junk",
+      "when": { "all": [ { "metric": "image_count", "op": ">=", "value": 8 }, { "text": "title", "includes_any": ["ジャンク", "現状"] } ] },
+      "score": 5,
+      "reason": "ジャンクなのに写真が {image_count} 枚と多い（状態を把握した丁寧な出品者の可能性）"
+    },
+    {
       "id": "seller_unavailable",
       "when": { "metric": "seller_available", "op": "==", "value": 0 },
       "score": 0,

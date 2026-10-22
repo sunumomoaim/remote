@@ -127,6 +127,7 @@ ${outcome}
 <tr><th>全出品のジャンク率 / 完動品率</th><td>${pct(m.junk_ratio)}（${m.junk_count} 件） / ${pct(m.working_ratio)}（${m.working_count} 件）</td></tr>
 <tr><th>修理語彙率</th><td>${pct(m.repair_vocab_ratio)}</td></tr>
 <tr><th>同型番 完動 / ジャンク</th><td>${m.same_model_working_count} / ${m.same_model_junk_count}</td></tr>
+<tr><th>仕入れ量（落札者としての評価）</th><td>${m.bought_total ?? "-"} 件 / 販売 ${m.sold_total ?? "-"} 件${m.buy_sell_ratio !== null ? `（仕入れ÷販売 ${m.buy_sell_ratio}）` : ""}${r.item.isStore ? " ・ ストア" : ""}${r.item.sellerRatingCount !== null ? ` ・ 総合評価 ${r.item.sellerRatingCount}` : ""}</td></tr>
 ${m.is_bundle ? `<tr><th>まとめ売り</th><td>複数台・セットの出品なので、1 台の価格比較（価格ルール）は適用していません</td></tr>` : ""}
 <tr><th>価格比（対 同型番完動品）</th><td>${
     m.price_ratio === null

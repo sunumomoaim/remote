@@ -20,6 +20,9 @@ export interface Item {
   buyNowPrice: number | null;
   sellerId: string;
   sellerName: string;
+  isStore: boolean;
+  /** 出品者の総合評価数 */
+  sellerRatingCount: number | null;
   images: string[];
   categoryPath: string[];
   endTime: string | null;
@@ -35,8 +38,10 @@ export interface SellerProfile {
   listings: Listing[];
   /** 出品中の総数（ページ送りで取り切れていない分を含む） */
   totalListings: number;
-  /** 出品者として受けた評価の総数 */
+  /** 出品者として受けた評価の総数（= 売った回数の目安） */
   totalRatings: number;
+  /** 落札者として受けた評価の総数（= 買った回数の目安。仕入れ量）。取れなければ null */
+  totalBought: number | null;
   fetchedPages: number;
 }
 
@@ -69,6 +74,18 @@ export interface Metrics {
   same_model_working_median_price: number | null;
   /** まとめ売り・複数台の出品なら 1。価格比較は 1 台の相場と合わないので価格ルールの対象外にする */
   is_bundle: number;
+  /** 商品ページの写真枚数 */
+  image_count: number;
+  /** 出品者が落札者として受けた評価数（仕入れ量）。不明なら null */
+  bought_total: number | null;
+  /** 出品者として受けた評価数（販売量） */
+  sold_total: number | null;
+  /** 仕入れ量 ÷ 販売量。大きいほど「買って選別して売る」業者らしい */
+  buy_sell_ratio: number | null;
+  /** ストア出品者なら 1 */
+  is_store: number;
+  /** 出品者の総合評価数 */
+  seller_rating_count: number | null;
   /** 価格比。出品者の同型番完動品があればそれ、無ければ落札相場の完動品中央値に対する比 */
   price_ratio: number | null;
   market_sample_size: number;

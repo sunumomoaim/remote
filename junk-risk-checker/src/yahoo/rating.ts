@@ -21,8 +21,9 @@ export interface RatingPage {
 export function parseRatingPage(html: string): RatingPage {
   const $ = cheerio.load(html);
   const items: Listing[] = [];
-  let entries = 0;
   const seen = new Set<string>();
+  // エントリ数は「非常に良い 出品者です。」のような評価行で数える（落札者側のページは商品リンクが無いため）
+  const entries = ($("body").text().match(/(出品者|落札者)です/g) ?? []).length;
 
   $('a[href*="/jp/auction/"]').each((_, a) => {
     const href = $(a).attr("href") ?? "";
@@ -31,7 +32,6 @@ export function parseRatingPage(html: string): RatingPage {
     const row = $(a).closest("tr");
     const info = row.prev("tr").text().replace(/\s+/g, " ");
     if (!/評価：/.test(info)) return; // 商品リンクでも評価エントリでないもの（おすすめ等）は除外
-    entries++;
     if (!/出品者です/.test(info)) return; // 落札者としての評価は対象外
     const id = m[1];
     if (seen.has(id)) return;
@@ -46,6 +46,7 @@ export function parseRatingPage(html: string): RatingPage {
     });
   });
 
+  // 「合計：<b>93</b>」。落札者側（role=buyer）のページでは商品名が非公開なので items は空だが合計は取れる
   const totalText = $("body").text();
   const tm = /合計：\s*(\d[\d,]*)/.exec(totalText);
   const total = tm ? Number(tm[1].replace(/,/g, "")) : items.length;

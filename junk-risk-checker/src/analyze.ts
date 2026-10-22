@@ -113,6 +113,16 @@ export async function loadSeller(sellerId: string, deps: AnalyzeDeps, now: () =>
     if (parsed.items.length < 50 || listings.length >= parsed.total) break;
   }
 
+  // 仕入れ量（落札者としての評価の合計件数。商品名は非公開なので件数だけ使う）
+  let totalBought: number | null = null;
+  try {
+    const html = await deps.fetcher(sellerRatingUrl(sellerId, 1, "buyer"));
+    fetchedPages++;
+    totalBought = parseRatingPage(html).total;
+  } catch {
+    totalBought = null; // 取れなくても判定は続ける
+  }
+
   // 落札済み（出品者としての評価）
   let totalRatings = 0;
   for (let page = 1; page <= maxRating; page++) {
@@ -130,6 +140,7 @@ export async function loadSeller(sellerId: string, deps: AnalyzeDeps, now: () =>
     listings: dedupeListings(listings),
     totalListings,
     totalRatings,
+    totalBought,
     fetchedPages,
   };
   deps.db.putSeller(profile);

@@ -19,6 +19,18 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
   const itemModels = extractModels(item.title, models);
   const itemPrice = item.buyNowPrice ?? item.price;
   const is_bundle = BUNDLE_TITLE.test(item.title) ? 1 : 0;
+  const itemMetrics = {
+    image_count: item.images.length,
+    is_store: item.isStore ? 1 : 0,
+    seller_rating_count: item.sellerRatingCount,
+  };
+  const bought = seller?.totalBought ?? null;
+  const sold = seller ? seller.totalRatings : null;
+  const tradeMetrics = {
+    bought_total: bought,
+    sold_total: sold,
+    buy_sell_ratio: bought !== null && sold !== null && sold > 0 ? round(bought / sold, 2) : null,
+  };
   const marketWorking = market?.workingMedianPrice ?? null;
   const marketJunk = market?.junkMedianPrice ?? null;
   const marketRatio = (base: number | null) => (base !== null && base > 0 && itemPrice !== null ? round(itemPrice / base, 3) : null);
@@ -55,6 +67,8 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
         is_bundle,
         price_ratio,
         ...marketMetrics,
+        ...itemMetrics,
+        ...tradeMetrics,
       },
     };
   }
@@ -107,6 +121,8 @@ export function computeMetrics(item: Item, seller: SellerProfile | null, config:
       is_bundle,
       price_ratio: priceRatio,
       ...marketMetrics,
+      ...itemMetrics,
+      ...tradeMetrics,
     },
   };
 }

@@ -17,6 +17,8 @@ test("商品ページ: __NEXT_DATA__ からタイトル・説明・出品者 ID�
   assert.match(item.description, /空シャッターがきれるかどうかのみ確認/);
   assert.deepEqual(item.categoryPath.slice(0, 3), ["オークション", "家電、AV、カメラ", "カメラ、光学機器"]);
   assert.equal(item.images.length, 10);
+  assert.equal(item.isStore, false);
+  assert.equal(item.sellerRatingCount, 1196);
   assert.equal(item.status, "open");
   assert.equal(item.endTime, "2026-10-11T21:08:29+09:00");
 });
@@ -76,4 +78,11 @@ test("落札相場ページ: 出品一覧と同じ JSON 構造。落札価格と
   assert.equal(page.items.length, 50);
   assert.ok(page.items.every((i) => i.source === "sold" && i.price !== null && i.price > 0 && i.title.length > 0));
   assert.ok(page.items.some((i) => /完動/.test(i.title)) && page.items.some((i) => /ジャンク/.test(i.title)));
+});
+
+test("評価ページ（落札者側）: 商品名は非公開だが、落札者として受けた評価の合計件数は取れる", () => {
+  const page = parseRatingPage(fixture("rating_buyer_p1.html"));
+  assert.equal(page.entries, 25);
+  assert.equal(page.items.length, 0, "落札者側の評価は落札品として数えない");
+  assert.equal(page.total, 1000);
 });

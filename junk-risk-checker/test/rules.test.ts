@@ -23,6 +23,12 @@ function metrics(over: Partial<Metrics> = {}): Metrics {
     same_model_junk_count: 0,
     same_model_working_median_price: null,
     is_bundle: 0,
+    image_count: 3,
+    bought_total: 10,
+    sold_total: 40,
+    buy_sell_ratio: 0.25,
+    is_store: 0,
+    seller_rating_count: 100,
     price_ratio: null,
     market_sample_size: 0,
     market_working_median_price: null,
@@ -108,4 +114,21 @@ test("ジャンク落札相場の 1.5 倍以上の価格なら危険度が上が
   assert.ok(r.hits.some((h) => h.id === "price_above_junk_market"));
   const few = run({ market_junk_price_ratio: 2, market_sample_size: 3 });
   assert.ok(!few.hits.some((h) => h.id === "price_above_junk_market"));
+});
+
+test("大量に仕入れるカメラ出品者（落札が販売の 2 倍以上・100 件以上）は危険度が上がる", () => {
+  const r = run({ bought_total: 1000, sold_total: 93, buy_sell_ratio: 10.75, camera_ratio: 0.76 });
+  assert.ok(r.hits.some((h) => h.id === "heavy_buyer_reseller"));
+  assert.match(r.hits.find((h) => h.id === "heavy_buyer_reseller")!.reason, /落札 1000 件 \/ 販売 93 件/);
+  const few = run({ bought_total: 30, sold_total: 10, buy_sell_ratio: 3, camera_ratio: 0.76 });
+  assert.ok(!few.hits.some((h) => h.id === "heavy_buyer_reseller"));
+  const unknown = run({ bought_total: null, buy_sell_ratio: null });
+  assert.ok(!unknown.hits.some((h) => h.id === "heavy_buyer_reseller"));
+});
+
+test("ジャンクなのに写真が多い出品は少し危険度が上がる", () => {
+  const r = run({ image_count: 10 }, "", "Nikon F3 ジャンク");
+  assert.ok(r.hits.some((h) => h.id === "many_photos_junk"));
+  assert.ok(!run({ image_count: 10 }, "", "Nikon F3 完動品").hits.some((h) => h.id === "many_photos_junk"));
+  assert.ok(!run({ image_count: 3 }, "", "Nikon F3 ジャンク").hits.some((h) => h.id === "many_photos_junk"));
 });

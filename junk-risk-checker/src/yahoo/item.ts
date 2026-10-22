@@ -21,6 +21,8 @@ export function parseItemPage(html: string, url: string): Item {
     buyNowPrice: toNumber(it.bidorbuy ?? it.buyNowPrice ?? it.taxinBidorbuy),
     sellerId: String(it.seller?.aucUserId ?? ""),
     sellerName: String(it.seller?.displayName ?? ""),
+    isStore: Boolean(it.seller?.isStore),
+    sellerRatingCount: toNumber(it.seller?.rating?.summary),
     images: Array.isArray(it.img) ? it.img.map((i: any) => String(i?.image ?? "")).filter(Boolean) : [],
     categoryPath: Array.isArray(it.category?.path) ? it.category.path.map((p: any) => String(p?.name ?? "")).filter(Boolean) : [],
     endTime: it.endTime ? String(it.endTime) : null,
